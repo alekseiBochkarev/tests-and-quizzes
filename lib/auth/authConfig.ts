@@ -15,6 +15,7 @@ export const authConfig = {
   maxFailedAttempts: env.AUTH_MAX_FAILED_ATTEMPTS,
   lockoutMinutes: env.AUTH_LOCKOUT_MINUTES,
   loginAfterVerify: env.AUTH_LOGIN_AFTER_VERIFY,
+  trustProxy: env.TRUST_PROXY,
   cookieSecure: env.APP_ENV === "production",
   legalTermsVersion: env.LEGAL_TERMS_VERSION,
   legalPrivacyVersion: env.LEGAL_PRIVACY_VERSION,

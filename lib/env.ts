@@ -65,6 +65,9 @@ const envSchema = z
     AUTH_MAX_FAILED_ATTEMPTS: positiveInt(5),
     AUTH_LOCKOUT_MINUTES: positiveInt(15),
     AUTH_LOGIN_AFTER_VERIFY: envBoolean(false),
+    // Доверять X-Forwarded-For / X-Real-IP только при явном включении:
+    // заголовки подделываются, если приложение не стоит за доверенным прокси.
+    TRUST_PROXY: envBoolean(false),
 
     AUTH_RL_REGISTER_PER_EMAIL_H: positiveInt(3),
     AUTH_RL_REGISTER_PER_IP_H: positiveInt(5),

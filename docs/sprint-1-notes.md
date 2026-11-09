@@ -1,6 +1,6 @@
 # Sprint 1 «Фундамент» — журнал решений и ограничений
 
-**Статус:** Sprint 1 завершён (ноябрь 2026).
+**Статус:** реализация Sprint 1 завершена (ноябрь 2026), приёмка ожидает прогона CI/PR.
 **Ветка:** `sprint-1/foundation`.
 **Связанная задача:** [`docs/tasks/01-foundation.md`](tasks/01-foundation.md).
 
@@ -27,6 +27,10 @@
 | Verify-email: GET показывает кнопку, POST подтверждает | `app/verify-email/page.tsx`, `app/api/v1/auth/verify-email/route.ts` | Почтовый prefetch не сжигает одноразовый токен. Форма работает без JS. |
 | Одинаковый ответ register для занятого email | `register/route.ts` | Защита от перечисления пользователей (AC-AUTH-02). |
 | `login`: rate-limit → scrypt → блокировка → verified | `app/api/v1/auth/login/route.ts` | `DUMMY_HASH` выравнивает время; состояние аккаунта раскрывается только после верного пароля (AC-AUTH-11…13). |
+| Активная блокировка входа не продлевается | `lib/auth/loginState.ts` | Чистая функция `nextFailedLoginState`: при активной блокировке 401 без записи; истёкшая блокировка сбрасывает старый счётчик, чтобы одна опечатка не запирала снова (AC-AUTH-13). |
+| `TRUST_PROXY` — явный флаг доверия заголовкам прокси | `lib/auth/rateLimit.ts`, `lib/env.ts` | `X-Forwarded-For` / `X-Real-IP` подделываются; в production доверие не включается автоматически. Без флага IP-бакеты не действуют. |
+| `readForm` с лимитом 32 КБ и ответом 413 | `lib/auth/api.ts` | Форма verify-email защищена от раздутого тела так же, как JSON-роуты. |
+| MARKETING-согласие пишется всегда | `lib/auth/consent.ts` | Opt-in и opt-out фиксируются с версией политики — аудит и 152-ФЗ. |
 | In-memory rate-limit по operation:email / operation:ip | `lib/auth/rateLimit.ts` | Достаточно для одного инстанса; при масштабировании — Redis. |
 | `assertSameOrigin` для всех state-changing роутов | `lib/http/origin.ts`, `lib/auth/api.ts` | SameSite=Lax + проверка Origin/Sec-Fetch-Site/Referer (AC-SEC-01). |
 | `safeNext` пропускает только внутренний путь | `lib/http/redirect.ts` | Отсекает `//evil.com`, `https://evil.com`, `/\evil.com`, `javascript:` и кодированные обходы. |
@@ -55,7 +59,7 @@
 | C12 | Два варианта гостевого режима | Задел `User.isGuest`; cookie/merge — Sprint 2–3. | Решено |
 | C13 | «Запомнить меня» не описано | Чекбокса нет; сессия всегда 30 дней по умолчанию. | Решено |
 | C14 | Смена пароля/email — Must, экран настроек позже | `change-password` реализован (P1); смена email и удаление — Sprint 2. | Требует подтверждения (Q4, Q7) |
-| C15 | Четыре шрифта без выбора | Golos Text через `next/font/google`; self-host woff2 при недоступности. | Решено |
+| C15 | Четыре шрифта без выбора | Golos Text через `next/font/google` при сборке. Self-host fallback (woff2) не реализован; при недоступности Google Fonts используется системный стек из `globals.css`. | Решено с ограничением |
 | C16 | Формат ошибок может отличаться в референсе | Используется конверт ТЗ: `{ error: { code, message, details? }, requestId }`. | Решено |
 | C17 | `quiz_user_id` против `autocard_user_id` | `quiz_user_id` + HMAC-подпись. | Решено |
 | C18 | Prisma 7 + PostgreSQL adapter | `@prisma/adapter-pg`, `pg`, `prisma.config.ts`; синтаксис проверен по документации Prisma 7. | Проверено на практике |
@@ -72,6 +76,7 @@
 - Для существующего тома: `npm run db:test:up` (создаёт базу через `pg`, без `docker exec`), `npm run db:test:deploy`, `npm run db:test:reset`.
 - `db:test:reset` отказывается работать, если `DATABASE_URL_TEST` указывает на `quiz` — dev-БД защищена от случайной очистки.
 - E2E работают с `APP_ENV=test`, `MAIL_TRANSPORT=log`; email генерируются уникальными, поэтому повторные прогоны не конфликтуют.
+- `TRUST_PROXY` по умолчанию `false`; e2e и CI не полагаются на заголовки прокси. Включать только за доверенным прокси.
 - CI использует сервис `postgres:16` с базой `quiz_test`; отдельный Docker в job не нужен.
 
 ## 5. Отложенные пункты
@@ -106,7 +111,9 @@
 | Срок жизни cookie сессии задаётся `Max-Age`, а не полем внутри подписи | Unit-тесты проверяют формат/подпись/epoch; истечение проверяется браузером | При необходимости добавить `issuedAt` в payload отдельной задачей |
 | TTL и даты считаются в UTC | Локальные даты появятся с прогрессом (Sprint 4) | `User.timezone` уже хранится |
 | Нет rate-limit на `verify-email` | Токен одноразовый и длинный; перебор не practical | Добавить при появлении публичного API-нагрузки |
-| Нет интеграционных тестов auth-роутов | Регрессии ловятся e2e, но не на уровне handler'ов | P1: добавить в Sprint 2 |
+| `TRUST_PROXY` не включён в production | IP-бакеты rate-limit не работают, остаётся лимит по email | На доверенном прокси выставить `TRUST_PROXY=true` и проверить в приёмочном окружении |
+| Шрифт загружается из Google Fonts при сборке | Self-host woff2 нет; при недоступности Google работает системный fallback из CSS | Добавить локальный woff2 отдельной задачей, если нужна автономность |
+| Интеграционных тестов auth-роутов на реальной БД нет | Unit и e2e покрывают логику и HTTP-сценарии, но не handler'ы с БД напрямую | P1, Sprint 2; в отчётах и документах не заявлять как выполненные |
 
 ## 7. Покрытие проверками
 
@@ -115,7 +122,11 @@
 | scrypt: формат, соль, неверный пароль, повреждённый хеш | ✅ `tests/unit/auth/password.test.ts` | — | — |
 | Токены: уникальность, sha256, TTL, одноразовость, типы | ✅ `tests/unit/auth/tokens.test.ts` | verify в полном сценарии | — |
 | Сессия: формат, подпись, подделка, смена epoch | ✅ `tests/unit/auth/session.test.ts` | вход/выход/guard | — |
-| Rate-limit: лимит, окно, раздельные бакеты, clientIp | ✅ `tests/unit/auth/rateLimit.test.ts` | — | блокировка после 5 неудач |
+| Rate-limit: лимит, окно, раздельные бакеты, clientIp/TRUST_PROXY | ✅ `tests/unit/auth/rateLimit.test.ts` | — | блокировка после 5 неудач |
+| Блокировка входа: активная, истёкшая, порог | ✅ `tests/unit/auth/loginState.test.ts` | ✅ `auth-login-errors.spec.ts` (5 неудач → 401/423) | AC-AUTH-13 |
+| Чтение формы: лимит 32 КБ и 413 | ✅ `tests/unit/auth/api.test.ts` | — | — |
+| Согласия: TERMS/PRIVACY и MARKETING opt-in/opt-out | ✅ `tests/unit/auth/consent.test.ts` | — | — |
+| Политика пароля: длина, пробелы по краям, стоп-лист | ✅ `tests/unit/auth/passwordPolicy.test.ts` | — | — |
 | CSRF/Origin | ✅ `tests/unit/http/origin.test.ts` | — | — |
 | `safeNext` | ✅ `tests/unit/http/redirect.test.ts` | редирект на `/login?next=/account` | — |
 | Валидация env | ✅ `tests/unit/env.test.ts` | — | — |
@@ -148,4 +159,6 @@ npm run db:test:deploy
 npm run test:e2e
 ```
 
-E2E стабильно проходят два прогона подряд без ретраев. CI выполняет те же шаги на чистом окружении с сервисом `postgres:16`.
+E2E рекомендуется прогонять дважды подряд без ретраев, чтобы поймать зависимость от состояния тестовой БД.
+
+**Статус приёмки:** локальные проверки выполнены в рамках исправлений ревью; результаты CI и e2e считаются подтверждёнными только после зелёного прогона в PR. До этого Sprint 1 не считается принятым.

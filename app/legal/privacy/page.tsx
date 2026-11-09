@@ -51,8 +51,25 @@ export default function PrivacyPage() {
         <h2 className="text-xl font-bold text-ink">5. Ваши права</h2>
         <p>
           Вы можете запросить сведения об обработке, исправление или удаление данных. Для этого
-          напишите нам — контакт указан в подвале сайта. Удаление аккаунта и полная анонимизация
-          появятся в следующем обновлении.
+          напишите нам на адрес из раздела 6. Удаление аккаунта и полная анонимизация появятся в
+          следующем обновлении.
+        </p>
+      </section>
+
+      <section
+        id="contact"
+        className="scroll-mt-24 space-y-4 text-base leading-relaxed text-ink-soft"
+      >
+        <h2 className="text-xl font-bold text-ink">6. Как связаться</h2>
+        <p>
+          По вопросам обработки персональных данных и работы сайта напишите на{" "}
+          <a
+            className="underline underline-offset-4 hover:text-accent"
+            href="mailto:support@example.com"
+          >
+            support@example.com
+          </a>
+          . Это тестовый адрес для Sprint 1; до открытой регистрации он будет заменён на рабочий.
         </p>
       </section>
     </article>

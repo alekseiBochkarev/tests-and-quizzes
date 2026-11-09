@@ -9,9 +9,10 @@ import { authConfig } from "@/lib/auth/authConfig";
  * `login:ip:<ip>` не пересекаются. Для одного инстанса этого достаточно;
  * при горизонтальном масштабировании счётчики переедут в Redis.
  *
- * `clientIp()` доверяет `x-forwarded-for` только при APP_ENV=production
- * (за Caddy/прокси) или при явном TRUST_PROXY=true. В локальном dev
- * заголовок может прислать кто угодно, поэтому он не используется.
+ * `clientIp()` доверяет `x-forwarded-for` / `x-real-ip` только при явном
+ * `TRUST_PROXY=true`. Значение по умолчанию — `false`, в том числе в
+ * production: заголовки легко подделать, если приложение не стоит за
+ * доверенным прокси. Без флага IP-бакеты не действуют.
  */
 
 type Bucket = { count: number; resetAt: number };
@@ -155,12 +156,11 @@ export function checkChangePasswordRateLimit(userId: string | null): RateLimitRe
 }
 
 /**
- * IP клиента. Заголовкам прокси верим только в production или при
- * явном TRUST_PROXY=true; иначе возвращаем null, и IP-бакет не действует.
+ * IP клиента. Заголовкам прокси верим только при явном `TRUST_PROXY=true`;
+ * иначе возвращаем null, и IP-бакет не действует. Флаг передаётся
+ * параметром, чтобы тесты не зависели от `process.env`.
  */
-export function clientIp(request: Request, appEnv: string = authConfig.appEnv): string | null {
-  const trustProxy =
-    appEnv === "production" || (process.env.TRUST_PROXY ?? "").toLowerCase() === "true";
+export function clientIp(request: Request, trustProxy: boolean = authConfig.trustProxy): string | null {
   if (!trustProxy) return null;
 
   const forwarded = request.headers.get("x-forwarded-for");

@@ -8,6 +8,7 @@ import {
 import { authConfig } from "@/lib/auth/authConfig";
 import { setSession } from "@/lib/auth/cookieStore";
 import { normalizeEmail } from "@/lib/auth/identity";
+import { nextFailedLoginState } from "@/lib/auth/loginState";
 import { DUMMY_HASH, verifyPassword } from "@/lib/auth/password";
 import { checkLoginRateLimit, clientIp } from "@/lib/auth/rateLimit";
 import { formatValidationError, loginSchema } from "@/lib/auth/schemas";
@@ -83,18 +84,24 @@ export async function POST(request: Request) {
 
     if (!user || !user.passwordHash || !passwordOk) {
       if (user && user.passwordHash) {
-        const failedLoginCount = user.failedLoginCount + 1;
-        const shouldLock = failedLoginCount >= authConfig.maxFailedAttempts;
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedLoginCount,
-            ...(shouldLock
-              ? { lockedUntil: new Date(Date.now() + authConfig.lockoutMinutes * 60 * 1000) }
-              : {}),
-          },
+        const next = nextFailedLoginState({
+          failedLoginCount: user.failedLoginCount,
+          lockedUntil: user.lockedUntil,
+          now: new Date(),
+          maxFailedAttempts: authConfig.maxFailedAttempts,
+          lockoutMinutes: authConfig.lockoutMinutes,
         });
+
+        // Активную блокировку не продлеваем: запись в БД не нужна.
+        if (next.shouldUpdate) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginCount: next.failedLoginCount,
+              lockedUntil: next.lockedUntil,
+            },
+          });
+        }
       }
 
       return fail("invalid_credentials", AUTH_MESSAGES.invalidCredentials, {

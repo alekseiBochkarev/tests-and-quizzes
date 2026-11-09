@@ -107,8 +107,45 @@ export function isFormSubmission(request: Request): boolean {
   );
 }
 
-export async function readForm(request: Request): Promise<Record<string, string>> {
-  const text = await request.text();
+export type FormBodyResult =
+  | { ok: true; body: Record<string, string> }
+  | { ok: false; response: Response };
+
+function payloadTooLarge(requestId: string): Response {
+  return fail("payload_too_large", "Слишком большой запрос.", {
+    requestId,
+    status: 413,
+  });
+}
+
+/**
+ * Чтение `application/x-www-form-urlencoded` с тем же лимитом 32 КБ, что и
+ * JSON. `content-length` проверяется до чтения тела, длина текста — после
+ * (запрос может прийти без заголовка или chunked).
+ */
+export async function readForm(request: Request, requestId: string): Promise<FormBodyResult> {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return { ok: false, response: payloadTooLarge(requestId) };
+  }
+
+  let text: string;
+  try {
+    text = await request.text();
+  } catch {
+    return {
+      ok: false,
+      response: fail("validation_error", "Не удалось прочитать данные формы.", {
+        requestId,
+        status: 400,
+      }),
+    };
+  }
+
+  if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) {
+    return { ok: false, response: payloadTooLarge(requestId) };
+  }
+
   const params = new URLSearchParams(text);
   const result: Record<string, string> = {};
 
@@ -116,7 +153,7 @@ export async function readForm(request: Request): Promise<Record<string, string>
     result[key] = value;
   }
 
-  return result;
+  return { ok: true, body: result };
 }
 
 export function rateLimited(requestId: string, retryAfterSeconds: number): Response {

@@ -1241,7 +1241,7 @@ npm run build
 
 Ошибки: `400 validation_error`, `429 rate_limited`, `503 db_unavailable`.
 
-Побочные эффекты: создаётся `User` (`role=USER`, `isGuest=false`, `emailVerifiedAt=null`), `AuthIdentity(EMAIL)`, две записи `Consent` (и третья при `marketingOptIn=true`), токен `VERIFY_EMAIL`, письмо.
+Побочные эффекты: создаётся `User` (`role=USER`, `isGuest=false`, `emailVerifiedAt=null`), `AuthIdentity(EMAIL)`, три записи `Consent`: `TERMS` и `PRIVACY` с `accepted=true`, `MARKETING` с `accepted=marketingOptIn` (отказ тоже фиксируется), токен `VERIFY_EMAIL`, письмо.
 
 #### `POST /login`
 
@@ -1420,7 +1420,7 @@ npm run build
 
 | ID | Критерий |
 |---|---|
-| AC-AUTH-01 `[S1]` | Регистрация с валидными email/паролем и двумя согласиями создаёт пользователя, `AuthIdentity(EMAIL)`, две записи `Consent` и токен `VERIFY_EMAIL`. |
+| AC-AUTH-01 `[S1]` | Регистрация с валидными email/паролем и двумя обязательными согласиями создаёт пользователя, `AuthIdentity(EMAIL)`, три записи `Consent` (`TERMS`/`PRIVACY` — приняты, `MARKETING` — `accepted=marketingOptIn`) и токен `VERIFY_EMAIL`. |
 | AC-AUTH-02 `[S1]` | Повторная регистрация на существующий email возвращает тот же `202` и тот же текст, что и первая; нового пользователя не создаёт; письмо не раскрывает факт существования аккаунта. |
 | AC-AUTH-03 `[S1]` | Пароль короче 8 символов или из стоп-листа отклоняется с `400 validation_error` и текстом, объясняющим правило. |
 | AC-AUTH-04 `[S1]` | Отсутствие любого обязательного согласия → `400`; запись `Consent` не создаётся. |

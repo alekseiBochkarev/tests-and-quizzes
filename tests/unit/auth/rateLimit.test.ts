@@ -107,39 +107,33 @@ describe("checkRegisterRateLimit", () => {
 });
 
 describe("clientIp", () => {
-  it("в local/test не доверяет заголовкам прокси", () => {
+  it("без TRUST_PROXY игнорирует заголовки прокси, в том числе в production", () => {
     const request = makeRequest({
       "x-forwarded-for": "203.0.113.10, 10.0.0.1",
       "x-real-ip": "203.0.113.11",
     });
 
-    expect(clientIp(request, "local")).toBeNull();
-    expect(clientIp(request, "test")).toBeNull();
+    expect(clientIp(request, false)).toBeNull();
+    // По умолчанию берётся authConfig.trustProxy, а он в тестах false.
+    expect(clientIp(request)).toBeNull();
   });
 
-  it("в production берёт первый валидный IP из x-forwarded-for", () => {
+  it("с TRUST_PROXY=true берёт первый валидный IP из x-forwarded-for", () => {
     const request = makeRequest({ "x-forwarded-for": "203.0.113.10, 10.0.0.1" });
 
-    expect(clientIp(request, "production")).toBe("203.0.113.10");
+    expect(clientIp(request, true)).toBe("203.0.113.10");
   });
 
-  it("в production при мусорном x-forwarded-for падает на x-real-ip", () => {
+  it("с TRUST_PROXY=true при мусорном x-forwarded-for падает на x-real-ip", () => {
     const request = makeRequest({
       "x-forwarded-for": "not-an-ip",
       "x-real-ip": "203.0.113.12",
     });
 
-    expect(clientIp(request, "production")).toBe("203.0.113.12");
+    expect(clientIp(request, true)).toBe("203.0.113.12");
   });
 
-  it("TRUST_PROXY=true включает доверие заголовкам вне production", () => {
-    process.env.TRUST_PROXY = "true";
-    const request = makeRequest({ "x-forwarded-for": "203.0.113.13" });
-
-    expect(clientIp(request, "local")).toBe("203.0.113.13");
-  });
-
-  it("без заголовков возвращает null", () => {
-    expect(clientIp(makeRequest(), "production")).toBeNull();
+  it("без заголовков возвращает null даже при доверии прокси", () => {
+    expect(clientIp(makeRequest(), true)).toBeNull();
   });
 });

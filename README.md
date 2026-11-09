@@ -36,7 +36,7 @@
 
 ## Статус
 
-**Sprint 1 «Фундамент» завершён (ноябрь 2026).** Репозиторий собирается, авторизация работает end-to-end, unit- и e2e-тесты проходят локально и в CI.
+**Sprint 1 «Фундамент»: реализация завершена (ноябрь 2026), приёмка ожидает прогона CI/PR.** Локальные проверки — lint, typecheck, unit, build и e2e — запускаются командами ниже; результат CI и e2e фиксируется после прогона в PR.
 
 Что уже работает:
 
@@ -46,7 +46,7 @@
 - `/account` защищён и отдаёт заглушку «Мои результаты» с `Cache-Control: no-store, private`;
 - интерфейс под 45+/55+: три шага размера текста (18/20/22 px), кнопки ≥ 56 px, skip-link, видимый фокус, legal-страницы;
 - dev-mailbox `/_dev/mailbox` (только при `APP_ENV != production`), `/api/health`, security-заголовки в `proxy.ts`;
-- unit-тесты `lib/auth/*` и `lib/http/*`, Playwright e2e и axe, GitHub Actions.
+- unit-тесты `lib/auth/*` и `lib/http/*`, Playwright e2e и axe, workflow GitHub Actions (прогон подтверждается в PR).
 
 Что дальше (Sprint 2): каталог тем и выпусков, импорт контента из `forms_writer`, админка, гостевой режим, удаление аккаунта и смена email.
 
@@ -98,6 +98,7 @@ npm run dev
 | `AUTH_RESET_TOKEN_TTL_HOURS`                                              | нет         | Срок ссылки сброса пароля, по умолчанию 1 ч.                                                                                                                |
 | `AUTH_MAX_FAILED_ATTEMPTS` / `AUTH_LOCKOUT_MINUTES`                       | нет         | Блокировка после 5 неудач на 15 минут.                                                                                                                      |
 | `AUTH_LOGIN_AFTER_VERIFY`                                                 | нет         | `false` по умолчанию: после подтверждения почты сессия не создаётся, пользователь идёт на `/login?verified=1`. `true` — авто-вход.                          |
+| `TRUST_PROXY`                                                             | нет         | `false` по умолчанию. `true` — доверять `X-Forwarded-For` / `X-Real-IP`; включайте только за доверенным прокси. Без флага IP-бакеты rate-limit не работают. |
 | `AUTH_RL_*`                                                               | нет         | Лимиты register/login/resend/forgot/reset/change-password по email, IP и пользователю (см. `.env.example`).                                                 |
 | `LEGAL_TERMS_VERSION` / `LEGAL_PRIVACY_VERSION`                           | нет         | Версии документов, которые фиксируются в согласиях. До юридической готовности — `*-draft`.                                                                  |
 | `MAIL_TRANSPORT`                                                          | нет         | `log` — письма в `logs/dev-mail.log` и `/_dev/mailbox`; `smtp` — реальная отправка. `log` запрещён при `APP_ENV=production`.                                |
@@ -159,6 +160,8 @@ proxy.ts             # security-заголовки, CSP, HSTS в production
 - **Unit (Vitest 3):** пароли, токены, сессионная cookie, rate-limit, Origin/CSRF, `safeNext`, валидация env.
 - **E2E (Playwright 1.65):** регистрация → dev-mailbox → verify → вход → `/account`, ошибки входа, защита `/account` и выход, размер текста, axe на `/`, `/login`, `/register` без critical/serious.
 - **CI (`.github/workflows/ci.yml`):** `npm ci` → `db:generate` → lint → typecheck → unit → `db:deploy` → build → e2e на сервисе `postgres:16` с БД `quiz_test`. Секреты не требуются.
+
+**Статус приёмки:** workflow и тесты реализованы, но результаты CI/e2e считаются подтверждёнными только после прогона в PR. Локальный прогон не заменяет приёмочный прогон CI.
 
 ## Фактические версии
 

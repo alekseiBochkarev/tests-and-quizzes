@@ -18,6 +18,14 @@ import { getRequestId } from "@/lib/http/requestId";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Внутренний сигнал отката транзакции verify-email при гонке за токен. */
+class VerifyTokenRaceError extends Error {
+  constructor() {
+    super("verify-token-race");
+    this.name = "VerifyTokenRaceError";
+  }
+}
+
 /**
  * POST /api/v1/auth/verify-email (§8.3, AC-AUTH-05…07).
  *
@@ -35,8 +43,10 @@ export async function POST(request: Request) {
 
   let token: string;
   if (isForm) {
-    const form = await readForm(request);
-    token = form.token ?? "";
+    const formResult = await readForm(request, requestId);
+    if (!formResult.ok) return formResult.response;
+
+    token = formResult.body.token ?? "";
     const parsed = verifyEmailSchema.safeParse({ token });
     if (!parsed.success) {
       const validation = formatValidationError(parsed.error);
@@ -82,19 +92,29 @@ export async function POST(request: Request) {
 
     const now = new Date();
     const consumed = await prisma.$transaction(async (tx) => {
+      // Сначала подтверждаем пользователя. Soft-deleted или уже
+      // подтверждённый аккаунт сюда не попадает — токен в этом случае
+      // не расходуем.
+      const verified = await tx.user.updateMany({
+        where: { id: lookup.userId, emailVerifiedAt: null, deletedAt: null },
+        data: { emailVerifiedAt: now },
+      });
+
+      if (verified.count !== 1) return false;
+
       const marked = await tx.emailToken.updateMany({
         where: { id: lookup.tokenId, usedAt: null },
         data: { usedAt: now },
       });
 
-      if (marked.count !== 1) return false;
-
-      await tx.user.updateMany({
-        where: { id: lookup.userId, emailVerifiedAt: null, deletedAt: null },
-        data: { emailVerifiedAt: now },
-      });
+      // Гонка: параллельный запрос успел использовать токен. Откатываем
+      // уже сделанное подтверждение, чтобы не оставить «полууспех».
+      if (marked.count !== 1) throw new VerifyTokenRaceError();
 
       return true;
+    }).catch((error: unknown) => {
+      if (error instanceof VerifyTokenRaceError) return false;
+      throw error;
     });
 
     if (!consumed) {

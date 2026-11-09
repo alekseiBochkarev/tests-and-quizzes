@@ -18,6 +18,7 @@ describe("validateEnv", () => {
     expect(env.AUTH_RESET_TOKEN_TTL_HOURS).toBe(1);
     expect(env.AUTH_MAX_FAILED_ATTEMPTS).toBe(5);
     expect(env.AUTH_LOGIN_AFTER_VERIFY).toBe(false);
+    expect(env.TRUST_PROXY).toBe(false);
     expect(env.MAIL_TRANSPORT).toBe("log");
     expect(env.DATABASE_URL_TEST).toBeUndefined();
   });
@@ -81,10 +82,23 @@ describe("validateEnv", () => {
     const env = validateEnv({
       ...MINIMAL,
       AUTH_LOGIN_AFTER_VERIFY: "true",
+      TRUST_PROXY: "true",
       SMTP_SECURE: "true",
     });
 
     expect(env.AUTH_LOGIN_AFTER_VERIFY).toBe(true);
+    expect(env.TRUST_PROXY).toBe(true);
     expect(env.SMTP_SECURE).toBe(true);
+  });
+
+  it("TRUST_PROXY по умолчанию выключен, в том числе в production", () => {
+    const env = validateEnv({
+      ...MINIMAL,
+      APP_ENV: "production",
+      MAIL_TRANSPORT: "smtp",
+      SMTP_HOST: "smtp.example.com",
+    });
+
+    expect(env.TRUST_PROXY).toBe(false);
   });
 });

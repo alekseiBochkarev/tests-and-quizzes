@@ -23,9 +23,9 @@ export type ConsentRecordInput = {
  *
  * Обязательные согласия пишутся всегда как `accepted: true` — роут не
  * доходит до создания пользователя, если хотя бы одно не отмечено.
- * Маркетинговое согласие фиксируется отдельно и только при явном opt-in:
- * отказ тоже полезен для аудита, но в Sprint 1 храним только согласие,
- * чтобы не раздувать таблицу.
+ * Маркетинговое согласие записывается всегда: и opt-in, и opt-out —
+ * это нужно для аудита и выполнения 152-ФЗ. Версия — версия политики
+ * конфиденциальности (маркетинговые условия описаны в ней).
  */
 export function buildConsentRecords(params: {
   marketingOptIn: boolean;
@@ -47,17 +47,14 @@ export function buildConsentRecords(params: {
       ip: params.ip,
       userAgent: params.userAgent,
     },
-  ];
-
-  if (params.marketingOptIn) {
-    records.push({
+    {
       type: CONSENT_MARKETING,
       version: consentVersions.privacy,
-      accepted: true,
+      accepted: params.marketingOptIn,
       ip: params.ip,
       userAgent: params.userAgent,
-    });
-  }
+    },
+  ];
 
   return records;
 }
