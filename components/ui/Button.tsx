@@ -43,7 +43,7 @@ export function buttonClassName({
     baseClasses,
     variantClasses[variant],
     fullWidth && "w-full",
-    variant === "quiet" && "min-h-12",
+    variant === "quiet" && "min-h-14",
     "disabled:pointer-events-none disabled:opacity-50",
     className,
   );
