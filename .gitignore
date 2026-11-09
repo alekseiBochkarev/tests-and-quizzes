@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment (secrets)
+.env
+.env.local
+.env.*.local
+# Шаблон env коммитится, в нём нет реальных значений
+!.env.example
+
+# Локальные артефакты
+logs/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
+# Prisma: клиент генерируется командой `npm run db:generate`
+lib/generated/
+prisma/generated/
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+.idea/
