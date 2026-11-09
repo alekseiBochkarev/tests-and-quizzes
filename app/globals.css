@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/*
+ * Дизайн-токены под аудиторию 45+/55+.
+ * Контраст основного текста к белому — выше 7:1 (AAA), вторичного — выше 4.5:1.
+ * Базовый размер текста переключается на <html data-text-size="s|m|l">:
+ * 18 / 20 / 22 px. Все размеры в rem, поэтому интерфейс масштабируется целиком.
+ */
+@theme {
+  --color-paper: #f6f4ef;
+  --color-surface: #ffffff;
+  --color-ink: #1b1f24;
+  --color-ink-soft: #343b43;
+  --color-muted: #4a525c;
+  --color-line: #c9cdd2;
+  --color-line-strong: #6b7280;
+  --color-accent: #0f5b5b;
+  --color-accent-hover: #0a4646;
+  --color-accent-soft: #e5f1ef;
+  --color-success: #166534;
+  --color-success-soft: #e8f5ec;
+  --color-danger: #a4262c;
+  --color-danger-soft: #fbeaea;
+  --color-focus: #111827;
+
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+
+  --font-sans:
+    var(--font-golos), "Golos Text", "PT Sans", "Segoe UI", system-ui, -apple-system, Arial,
+    sans-serif;
+}
+
+html {
+  font-size: 18px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+html[data-text-size="s"] {
+  font-size: 18px;
+}
+
+html[data-text-size="m"] {
+  font-size: 20px;
+}
+
+html[data-text-size="l"] {
+  font-size: 22px;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+/* Видимый фокус для клавиатуры на всех интерактивных элементах. */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Skip-link: скрыт, пока не получит фокус с клавиатуры. */
+.skip-link {
+  position: absolute;
+  top: -10rem;
+  left: 1rem;
+  z-index: 100;
+  display: inline-flex;
+  min-height: 56px;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-control);
+  background-color: var(--color-accent);
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Уважаем системную настройку «уменьшить движение». */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

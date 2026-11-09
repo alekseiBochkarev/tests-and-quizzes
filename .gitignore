@@ -28,3 +28,12 @@ prisma/generated/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Служебные файлы локальных инструментов (не часть продукта)
+.agents/
+.claude/
+.windsurf/
+.opencode/
+skills-lock.json
+
+/lib/generated/prisma
