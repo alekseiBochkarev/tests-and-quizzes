@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 /**
  * security-заголовки для всех страниц и API.
@@ -10,8 +11,9 @@ import { NextResponse } from "next/server";
  * иначе ломается гидратация. 'unsafe-eval' и ws: добавляются только вне
  * production — их требует dev-режим (HMR, source maps).
  */
-export function proxy() {
+export function proxy(request: NextRequest) {
   const isProduction = process.env.APP_ENV === "production";
+  const pathname = request.nextUrl.pathname;
 
   const scriptSrc = isProduction
     ? "'self' 'unsafe-inline'"
@@ -41,6 +43,16 @@ export function proxy() {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=(), payment=()",
   );
+
+  // Auth-ответы и защищённые страницы не должны попадать в кэш браузера
+  // и промежуточных прокси (§8.1, AC-GUARD-04).
+  if (
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
+    pathname.startsWith("/api/v1/auth/")
+  ) {
+    response.headers.set("Cache-Control", "no-store, private");
+  }
 
   // HSTS только в production: на localhost по http он бессмысленен и мешает.
   if (isProduction) {
