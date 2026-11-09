@@ -6,7 +6,7 @@
 **Название:** Sprint 1. Фундамент: рабочая основа проекта «Тесты и квизы»
 **Приоритет:** P0 (блокирует все последующие спринты)
 **Оценка:** 8–10 pd (один full-stack разработчик)
-**Ветка:** `sprint-1/foundation` → `main` через PR
+**Ветка:** `sprint-1/foundation` → `master` через PR
 **Срок по roadmap:** 1–2 недели (`docs/02-tz.md`, §14.1)
 
 **Цель:** получить запускаемое приложение, в которое уже можно зарегистрироваться, войти и увидеть оболочку будущего продукта, и на котором команда может безопасно строить Sprint 2–4.
@@ -294,16 +294,16 @@ node -v          # ожидается v24.x
 npm -v           # ожидается >= 11.x (npm 12 не входит в Node 24)
 docker version   # клиент и engine доступны
 git init
-git branch -M main
+git branch -M master
 git add .
 git commit -m "chore: initial commit with docs"
 ```
 
 Создать `.gitignore` со списком: `node_modules/`, `.next/`, `.env`, `.env.local`, `.env.*.local`, `!.env.example`, `logs/`, `coverage/`, `test-results/`, `playwright-report/`, `*.tsbuildinfo`.
 
-Для CI нужен удалённый GitHub-репозиторий: `git remote add origin <url>`, `git push -u origin main`. Если репозитория ещё нет, шаг 7 (CI) выполняется после его создания; локальные проверки от этого не зависят.
+Для CI нужен удалённый GitHub-репозиторий: `git remote add origin <url>`, `git push -u origin master`. Если репозитория ещё нет, шаг 7 (CI) выполняется после его создания; локальные проверки от этого не зависят.
 
-**Ожидаемый результат:** git-репозиторий с документацией на ветке `main`, `.env` и логи не попадают в индекс, `.env.example` — попадает. `git status` чистый.
+**Ожидаемый результат:** git-репозиторий с документацией на ветке `master`, `.env` и логи не попадают в индекс, `.env.example` — попадает. `git status` чистый.
 
 ---
 
@@ -582,7 +582,7 @@ webServer: {
 Тестам нужна отдельная БД `quiz_test`: `DATABASE_URL_TEST`, скрипты `db:test:up`, `db:test:deploy`, `db:test:reset` и сид фикстур. Dev-БД не очищается. Для e2e: `APP_ENV=test`, `MAIL_TRANSPORT=log`.
 
 **GitHub Actions** (`.github/workflows/ci.yml`):
-- триггеры: `push` в `main`, `pull_request`;
+- триггеры: `push` в `master`, `pull_request`;
 - `ubuntu-latest`, `actions/setup-node` с Node 24, `npm ci`;
 - service `postgres:16` с healthcheck и базой `quiz_test`; env job'а: `APP_ENV=test`, `DATABASE_URL`, `DATABASE_URL_TEST`, `AUTH_SECRET`, `APP_URL`, `MAIL_TRANSPORT=log`, `LEGAL_*_VERSION`. Тесты используют `quiz_test`, dev-база не затрагивается;
 - шаги: `npm ci` → `npm run db:generate` (сразу, до lint/typecheck — иначе Prisma-клиент ещё не сгенерирован) → `npm run lint` → `npm run typecheck` → `npm test` → `npm run db:deploy` → `npm run build` → `npm run test:e2e` (Playwright с `--with-deps chromium`);
@@ -1712,7 +1712,7 @@ npm run test:e2e
 ### 12.7. Процесс
 
 - [ ] PR прошёл ревью вторым человеком.
-- [ ] Ветка `sprint-1/foundation` смержена в `main`.
+- [ ] Ветка `sprint-1/foundation` смержена в `master`.
 - [ ] Нет открытых дефектов, блокирующих вход или регистрацию.
 - [ ] Задача закрыта со ссылкой на PR и на `docs/sprint-1-notes.md`.
 
