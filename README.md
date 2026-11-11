@@ -36,7 +36,7 @@
 
 ## Статус
 
-**Sprint 1 «Фундамент»: реализация завершена (ноябрь 2026), приёмка ожидает прогона CI/PR.** Локальные проверки — lint, typecheck, unit, build и e2e — запускаются командами ниже; результат CI и e2e фиксируется после прогона в PR.
+**Sprint 1 «Фундамент»: реализация завершена (ноябрь 2026), CI на `master` прошёл успешно.** Локальные проверки — lint, typecheck, unit, build и e2e — зелёные. Осталось пройти ручной чек-лист §10.3 из задачи; отдельный PR не создавался, работа ведётся в `master`.
 
 Что уже работает:
 
@@ -46,7 +46,7 @@
 - `/account` защищён и отдаёт заглушку «Мои результаты» с `Cache-Control: no-store, private`;
 - интерфейс под 45+/55+: три шага размера текста (18/20/22 px), кнопки ≥ 56 px, skip-link, видимый фокус, legal-страницы;
 - dev-mailbox `/_dev/mailbox` (только при `APP_ENV != production`), `/api/health`, security-заголовки в `proxy.ts`;
-- unit-тесты `lib/auth/*` и `lib/http/*`, Playwright e2e и axe, workflow GitHub Actions (прогон подтверждается в PR).
+- unit-тесты `lib/auth/*` и `lib/http/*`, Playwright e2e и axe, workflow GitHub Actions (CI на `master` — зелёный).
 
 Что дальше (Sprint 2): каталог тем и выпусков, импорт контента из `forms_writer`, админка, гостевой режим, удаление аккаунта и смена email.
 
@@ -161,7 +161,7 @@ proxy.ts             # security-заголовки, CSP, HSTS в production
 - **E2E (Playwright 1.65):** регистрация → dev-mailbox → verify → вход → `/account`, ошибки входа, защита `/account` и выход, размер текста, axe на `/`, `/login`, `/register` без critical/serious.
 - **CI (`.github/workflows/ci.yml`):** `npm ci` → `db:generate` → lint → typecheck → unit → `db:deploy` → build → e2e на сервисе `postgres:16` с БД `quiz_test`. Секреты не требуются.
 
-**Статус приёмки:** workflow и тесты реализованы, но результаты CI/e2e считаются подтверждёнными только после прогона в PR. Локальный прогон не заменяет приёмочный прогон CI.
+**Статус приёмки:** CI на `master` прошёл успешно (10.11.2026): lint, typecheck, unit, migrate, build и e2e. Осталось пройти ручной чек-лист §10.3 из задачи; отдельный PR не создавался.
 
 ## Фактические версии
 
