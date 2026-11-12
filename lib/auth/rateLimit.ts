@@ -155,6 +155,17 @@ export function checkChangePasswordRateLimit(userId: string | null): RateLimitRe
   );
 }
 
+/** Защита игровых операций от перебора и случайных циклов. */
+export function checkAttemptStartRateLimit(userId: string | null): RateLimitResult {
+  if (!userId) return ALLOWED;
+  return check(`attempts:start:user:${userId}`, 30, HOUR_MS);
+}
+
+export function checkAttemptAnswerRateLimit(userId: string | null): RateLimitResult {
+  if (!userId) return ALLOWED;
+  return check(`attempts:answer:user:${userId}`, 600, HOUR_MS);
+}
+
 /**
  * IP клиента. Заголовкам прокси верим только при явном `TRUST_PROXY=true`;
  * иначе возвращаем null, и IP-бакет не действует. Флаг передаётся

@@ -25,6 +25,11 @@ export async function SiteHeader({ textSize }: { textSize: TextSize }) {
           <Link href="/tests" className={navLinkClasses}>
             Тесты
           </Link>
+          {user ? (
+            <Link href="/interests" className={navLinkClasses}>
+              Интересы
+            </Link>
+          ) : null}
           <Link href="/account" className={navLinkClasses}>
             Мои результаты
           </Link>

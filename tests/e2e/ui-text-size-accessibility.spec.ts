@@ -34,7 +34,7 @@ test.describe("Размер текста", () => {
 });
 
 test.describe("Доступность (axe)", () => {
-  for (const path of ["/", "/login", "/register"]) {
+  for (const path of ["/", "/login", "/register", "/tests", "/tests/history"]) {
     test(`${path}: нет нарушений critical/serious`, async ({ page }) => {
       await page.goto(path);
 

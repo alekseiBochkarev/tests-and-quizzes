@@ -1,6 +1,6 @@
-// Схема Sprint 1: только auth-контур (§7.2–7.4 задачи 01-foundation).
-// Игровые модели (Topic, Question, Attempt, Progress, UserStats и т.д.)
-// добавляются отдельными миграциями в Sprint 2–4.
+// Схема Sprint 1 + Sprint 2.
+// Auth-контур: User, AuthIdentity, EmailToken, Consent.
+// Учебный контур: Category → Topic → Question, попытки и прогресс.
 
 generator client {
   provider = "prisma-client"
@@ -37,6 +37,33 @@ enum ConsentType {
   MARKETING
 }
 
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+}
+
+enum AttemptMode {
+  TRAINING
+  REVIEW
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum InterestSource {
+  ONBOARDING
+  MANUAL
+  BEHAVIOR
+}
+
 model User {
   id               String    @id @default(cuid())
   email            String
@@ -52,13 +79,21 @@ model User {
   failedLoginCount Int       @default(0)
   lockedUntil      DateTime?
   lastLoginAt      DateTime?
+  // Когда пользователь прошёл или пропустил выбор интересов.
+  interestsSetAt   DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
-  identities AuthIdentity[]
-  tokens     EmailToken[]
-  consents   Consent[]
+  identities       AuthIdentity[]
+  tokens           EmailToken[]
+  consents         Consent[]
+  interests        UserInterest[]
+  attempts         Attempt[]
+  questionProgress QuestionProgress[]
+  topicProgress    TopicProgress[]
+  stats            UserStats?
+  dailyActivity    DailyActivity[]
 }
 
 model AuthIdentity {
@@ -104,4 +139,238 @@ model Consent {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type, version])
+}
+
+// --- Учебный контур: каталог и контент ---
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topics   Topic[]
+  attempts Attempt[]
+}
+
+model Topic {
+  id          String        @id @default(cuid())
+  categoryId  String
+  slug        String        @unique
+  title       String
+  description String?
+  coverUrl    String?
+  order       Int           @default(0)
+  status      ContentStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  questions Question[]
+  interests UserInterest[]
+  attempts  Attempt[]
+  progress  TopicProgress[]
+
+  @@index([categoryId, order])
+  @@index([status])
+}
+
+model Question {
+  id           String        @id @default(cuid())
+  topicId      String
+  type         QuestionType  @default(SINGLE_CHOICE)
+  text         String
+  explanation  String
+  imageUrl     String?
+  imageLicense String?
+  difficulty   Int           @default(2)
+  status       ContentStatus @default(PUBLISHED)
+  // Демо-контент из сида: помечаем, чтобы не выдавать за финальный.
+  isDemo       Boolean       @default(false)
+  contentHash  String?
+  version      Int           @default(1)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  options        QuestionOption[]
+  attemptAnswers AttemptAnswer[]
+  progress       QuestionProgress[]
+
+  @@index([topicId, status])
+  @@index([contentHash])
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  answers AttemptAnswer[] @relation("SelectedOption")
+
+  @@unique([questionId, order])
+  @@index([questionId])
+}
+
+model UserInterest {
+  id        String         @id @default(cuid())
+  userId    String
+  topicId   String
+  weight    Int            @default(1)
+  source    InterestSource @default(ONBOARDING)
+  createdAt DateTime       @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@index([userId])
+}
+
+// --- Попытки ---
+
+model Attempt {
+  id            String        @id @default(cuid())
+  userId        String
+  categoryId    String?
+  topicId       String?
+  mode          AttemptMode   @default(TRAINING)
+  status        AttemptStatus @default(IN_PROGRESS)
+  questionCount Int
+  answeredCount Int           @default(0)
+  correctCount  Int           @default(0)
+  score         Int           @default(0)
+  maxScore      Int           @default(0)
+  xpEarned      Int           @default(0)
+  startedAt     DateTime      @default(now())
+  finishedAt    DateTime?
+  durationSec   Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  topic    Topic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  answers AttemptAnswer[]
+
+  @@index([userId, startedAt])
+  @@index([status])
+  @@index([topicId])
+}
+
+model AttemptAnswer {
+  id               String    @id @default(cuid())
+  attemptId        String
+  questionId       String
+  order            Int
+  selectedOptionId String?
+  isCorrect        Boolean?
+  responseMs       Int?
+  answeredAt       DateTime?
+  // Фиксируем версию вопроса, чтобы правки контента не ломали историю.
+  questionVersion  Int       @default(1)
+  xpAwarded        Int       @default(0)
+  // Был ли вопрос просрочен на момент ответа (для бонуса повторения).
+  wasDue           Boolean   @default(false)
+
+  attempt        Attempt         @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  selectedOption QuestionOption? @relation("SelectedOption", fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId, order])
+  @@index([questionId])
+}
+
+// --- Прогресс ---
+
+model QuestionProgress {
+  id                 String    @id @default(cuid())
+  userId             String
+  questionId         String
+  seenCount          Int       @default(0)
+  correctCount       Int       @default(0)
+  wrongCount         Int       @default(0)
+  correctStreak      Int       @default(0)
+  attemptsWithCorrect Int      @default(0)
+  masteryLevel       Int       @default(0)
+  lastResult         Boolean?
+  lastSeenAt         DateTime?
+  nextReviewAt       DateTime?
+  updatedAt          DateTime  @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, masteryLevel])
+}
+
+model TopicProgress {
+  id               String    @id @default(cuid())
+  userId           String
+  topicId          String
+  totalQuestions   Int       @default(0)
+  seenQuestions    Int       @default(0)
+  masteredQuestions Int      @default(0)
+  answeredCount    Int       @default(0)
+  correctCount     Int       @default(0)
+  masteryPoints    Int       @default(0)
+  progress         Float     @default(0)
+  coverage         Float     @default(0)
+  quality          Float     @default(0)
+  accuracy         Float     @default(0)
+  level            Int       @default(0)
+  lastActivityAt   DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@index([userId, lastActivityAt])
+  @@index([userId, progress])
+}
+
+model UserStats {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  xp                Int       @default(0)
+  level             Int       @default(1)
+  totalAttempts     Int       @default(0)
+  completedAttempts Int       @default(0)
+  totalAnswered     Int       @default(0)
+  totalCorrect      Int       @default(0)
+  bestAccuracy      Float     @default(0)
+  dailyStreak       Int       @default(0)
+  longestStreak     Int       @default(0)
+  lastActiveDate    DateTime? @db.Date
+  timezone          String    @default("Europe/Moscow")
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyActivity {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime @db.Date
+  xp       Int      @default(0)
+  attempts Int      @default(0)
+  answered Int      @default(0)
+  correct  Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }

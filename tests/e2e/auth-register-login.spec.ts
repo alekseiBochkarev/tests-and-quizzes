@@ -31,9 +31,7 @@ test.describe("Сохранение результатов: регистраци
 
     await expect(page).toHaveURL(/\/account$/);
     await expect(page.getByRole("heading", { name: "Мои результаты" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Здесь появятся ваши результаты" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Итоги" })).toBeVisible();
 
     const cookies = await page.context().cookies();
     const session = cookies.find((cookie) => cookie.name === "quiz_user_id");

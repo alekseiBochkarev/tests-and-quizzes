@@ -70,6 +70,9 @@ jobs:
       - name: Apply migrations to quiz_test
         run: npm run db:deploy
 
+      - name: Seed demo content
+        run: npm run db:seed
+
       - name: Build
         run: npm run build
 
