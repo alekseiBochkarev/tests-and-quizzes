@@ -16,6 +16,7 @@
 | [`docs/sprint-1-notes.md`](docs/sprint-1-notes.md)                             | Журнал решений Sprint 1: расхождения с ТЗ, отложенные пункты, известные ограничения.                                                                      |
 | [`docs/sprint-2-notes.md`](docs/sprint-2-notes.md)                             | Журнал решений Sprint 2: что сделано, отклонения от плана, ограничения.                                                                                   |
 | [`docs/tasks/02-learning-experience.md`](docs/tasks/02-learning-experience.md) | Задача Sprint 2: объём, модель данных, backend, UI, acceptance criteria, DoD.                                                                             |
+| [`docs/tasks/03-development-plan.md`](docs/tasks/03-development-plan.md)       | План после Sprint 2: параллельные потоки, задачи, волны, зависимости, правила merge.                                                                      |
 
 ## Кратко о продукте
 
