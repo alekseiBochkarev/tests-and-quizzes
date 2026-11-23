@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "topics": {
+    "История": { "category": "nauka", "topic": "history" },
+    "Литература": { "category": "nauka", "topic": "literature" },
+    "Астрономия": { "category": "nauka", "topic": "space", "title": "Космос" },
+    "Космос": { "category": "nauka", "topic": "space", "title": "Космос" },
+    "Физика": { "category": "nauka", "topic": "exact-sciences", "title": "Точные науки" },
+    "Химия": { "category": "nauka", "topic": "exact-sciences", "title": "Точные науки" },
+    "География": { "category": "priroda", "topic": "geography" },
+    "Биология": { "category": "priroda", "topic": "biology", "title": "Биология" },
+    "Природа": { "category": "priroda", "topic": "nature", "title": "Природа" },
+    "Живопись": { "category": "iskusstvo", "topic": "paintings" },
+    "Музыка": { "category": "iskusstvo", "topic": "music" },
+    "Кино": { "category": "kino", "topic": "cinema", "title": "Кино" },
+    "Спорт": { "category": "krugozor", "topic": "sport" },
+    "Техника": { "category": "krugozor", "topic": "technology" },
+    "Технологии": { "category": "krugozor", "topic": "technology" },
+    "Язык": { "category": "krugozor", "topic": "language" },
+    "Карты": { "category": "krugozor", "topic": "maps-navigation", "title": "Карты и навигация" }
+  }
+}

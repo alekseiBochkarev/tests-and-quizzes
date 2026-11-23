@@ -82,7 +82,13 @@ function accuracy(correct: number, answered: number): number {
 async function loadOverview(userId: string): Promise<UserOverview> {
   const [stats, masteredQuestions, dueCount] = await Promise.all([
     prisma.userStats.findUnique({ where: { userId } }),
-    prisma.questionProgress.count({ where: { userId, masteryLevel: { gte: 4 } } }),
+    prisma.questionProgress.count({
+      where: {
+        userId,
+        masteryLevel: { gte: 4 },
+        question: { status: ContentStatus.PUBLISHED },
+      },
+    }),
     countDueQuestions(userId),
   ]);
 

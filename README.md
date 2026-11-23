@@ -17,6 +17,7 @@
 | [`docs/sprint-2-notes.md`](docs/sprint-2-notes.md)                             | Журнал решений Sprint 2: что сделано, отклонения от плана, ограничения.                                                                                   |
 | [`docs/tasks/02-learning-experience.md`](docs/tasks/02-learning-experience.md) | Задача Sprint 2: объём, модель данных, backend, UI, acceptance criteria, DoD.                                                                             |
 | [`docs/tasks/03-development-plan.md`](docs/tasks/03-development-plan.md)       | План после Sprint 2: параллельные потоки, задачи, волны, зависимости, правила merge.                                                                      |
+| [`docs/tasks/04-content-import.md`](docs/tasks/04-content-import.md)           | CNT-01: импорт вопросов из `forms_writer`, дедуп по `contentHash`, черновики, скрытие демо-контента.                                                      |
 
 ## Кратко о продукте
 
@@ -43,7 +44,7 @@
 
 ## Статус
 
-**Sprint 1 «Фундамент»: реализован.** **Sprint 2 «Учебный контур»: реализован (12.11.2026).** Локальные проверки — lint, typecheck, unit, build и e2e — зелёные.
+**Sprint 1 «Фундамент»: реализован.** **Sprint 2 «Учебный контур»: реализован (12.11.2026).** **CNT-01 «Импорт из `forms_writer`»: реализован (23.11.2026).** Локальные проверки — lint, typecheck, unit, build и e2e — зелёные.
 
 Что уже работает:
 
@@ -51,6 +52,7 @@
 - вход/выход, «выйти на всех устройствах», сброс пароля, повторная отправка подтверждения;
 - cookie `quiz_user_id` (`<userId>:<sessionEpoch>` + HMAC), rate-limit по email/IP, блокировка после неудачных попыток, CSRF-проверка Origin;
 - каталог `/tests`: 5 разделов, 14 тем, 122 демо-вопроса, количество вопросов и прогресс;
+- импорт вопросов из `forms_writer` через CLI: дедуп по `contentHash`, черновики без объяснения, автоскрытие демо-контента в темах с реальными вопросами;
 - онбординг интересов при первом заходе в каталог и редактирование на `/interests`;
 - персональная главная: «Продолжить», «Рекомендуем», «Пора повторить»;
 - тренировка `/attempts/[id]`: 10/15/20/30 вопросов, серверная проверка, объяснение после каждого ответа, без таймера;
@@ -62,7 +64,7 @@
 - dev-mailbox `/_dev/mailbox` (только при `APP_ENV != production`), `/api/health`, security-заголовки в `proxy.ts`;
 - unit-тесты прогресса и auth, Playwright e2e и axe, workflow GitHub Actions.
 
-Что дальше: админка и импорт из `forms_writer`, готовые выпуски `Quiz`, гостевой режим и merge, «тест дня», награды и дипломы, удаление аккаунта и смена email.
+Что дальше: админка и импорт через UI, готовые выпуски `Quiz`, гостевой режим и merge, «тест дня», награды и дипломы, удаление аккаунта и смена email.
 
 ## Быстрый старт (≤ 10 минут)
 
@@ -133,11 +135,38 @@ npm run dev
 | `npm run db:generate`                      | Генерация Prisma Client в `lib/generated/prisma` (gitignored). |
 | `npm run db:migrate` / `npm run db:deploy` | Миграции Prisma для dev-БД.                                    |
 | `npm run db:seed`                          | Идемпотентный демо-контент: 5 разделов, 14 тем, 122 вопроса.   |
+| `npm run db:import`                        | Импорт вопросов из `forms_writer` (см. ниже).                  |
 | `npm run db:test:up`                       | Создать `quiz_test`, если её нет.                              |
 | `npm run db:test:deploy`                   | Применить миграции к `quiz_test`.                              |
 | `npm run db:test:reset`                    | Очистить и заново мигрировать **только** `quiz_test`.          |
 | `npm run db:studio`                        | Prisma Studio.                                                 |
 | `npm run format` / `npm run format:check`  | Prettier.                                                      |
+
+### Импорт контента
+
+Импорт принимает JSON `forms_writer` и не меняет схему БД:
+
+```powershell
+# Посмотреть план без записи
+npm run db:import -- --file ../forms_writer/samples/questions.json --dry-run
+
+# Загрузить вопросы вместе с новыми темами из маппинга
+npm run db:import -- --file ./batch-2026-11.json --create-topics
+
+# Загрузить только если вся партия валидна (для CI)
+npm run db:import -- --file ./batch.json --strict
+```
+
+Правила:
+
+- тема из файла переводится в раздел и тему каталога через `scripts/import/topic-map.json`; неизвестная тема — ошибка;
+- дубликаты определяются по `contentHash`, который не зависит от порядка вариантов, поэтому повторный импорт ничего не создаёт;
+- вопрос без объяснения сохраняется как `DRAFT` и не показывается пользователям, а уже опубликованный вопрос черновик не снимает с публикации;
+- изменение текста или вариантов создаёт новую версию: старая формулировка уходит в `ARCHIVED`;
+- если в теме появился реальный опубликованный вопрос, демо-вопросы этой темы скрываются (`ARCHIVED`), а не удаляются; `TopicProgress` пересчитывается;
+- `--dry-run` показывает отчёт «создано / обновлено / новых версий / пропущено / черновиков» без записи, `--report <path>` сохраняет JSON-отчёт, `--strict` откатывает партию при ошибке.
+
+Подробности и критерии приёмки — [`docs/tasks/04-content-import.md`](docs/tasks/04-content-import.md).
 
 ### E2E локально
 
@@ -159,10 +188,10 @@ npm run test:e2e
 app/                 # App Router: страницы, auth-роуты, /api/v1, /api/health, dev/mailbox
 components/          # layout, ui-кит под 55+, формы авторизации, каталог, плеер
 lib/auth/            # scrypt, токены, сессия, rate-limit, письма, currentUser
-lib/content/         # каталог и тема по slug
+lib/content/         # каталог, тема по slug и импорт из forms_writer
 lib/interests/       # интересы пользователя
 lib/attempts/        # создание попытки, ответ, завершение, прерывание, разбор
-lib/progress/        # mastery, scoring, recommendations, stats, level, time
+lib/progress/        # mastery, scoring, recommendations, stats, topicAggregate, level, time
 lib/stats/           # главная, «Мои результаты», рекомендации, слабые темы
 lib/http/            # json-конверт, Origin/CSRF, safeNext, requestId
 lib/ui/              # тексты интерфейса: склонения, подписи уровней
@@ -170,7 +199,9 @@ lib/env.ts           # Zod-валидация окружения
 prisma/              # schema.prisma и миграции
 scripts/seed.mjs     # идемпотентный демо-контент
 scripts/seed/content # разделы и вопросы демо-набора
-tests/unit/          # Vitest: auth, http, env, progress
+scripts/import-questions.mjs # импорт вопросов из forms_writer
+scripts/import/      # маппинг тем forms_writer → каталог
+tests/unit/          # Vitest: auth, http, env, progress, импорт
 tests/e2e/           # Playwright: auth, guard, обучение, размер текста, axe
 scripts/db-test.mjs  # управление quiz_test
 docker/init/         # создание quiz_test при первом старте контейнера
