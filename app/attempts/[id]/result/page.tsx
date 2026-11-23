@@ -34,14 +34,15 @@ export default async function AttemptResultPage({ params }: PageProps) {
     redirect(`/attempts/${id}`);
   }
 
-  const title = result.topicTitle ?? result.categoryTitle ?? "Тренировка";
+  const title = result.quizTitle ?? result.topicTitle ?? result.categoryTitle ?? "Тренировка";
+  const label = result.quizTitle ? `Выпуск «${result.quizTitle}»` : title;
   const answeredAll = result.answeredCount >= result.questionCount;
   const abandoned = result.status === "ABANDONED";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="space-y-3">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">{title}</p>
+        <p className="text-base font-semibold tracking-wide text-accent uppercase">{label}</p>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {abandoned ? "Тренировка прервана" : "Тренировка завершена"}
         </h1>
