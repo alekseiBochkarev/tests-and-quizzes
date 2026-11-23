@@ -27,7 +27,13 @@ import { fileURLToPath } from "node:url";
 
 import { Client } from "pg";
 
-import { hasErrors, normalizeForHash, parseTopicMap, planImport } from "../lib/content/import.ts";
+import {
+  areTextsSimilar,
+  hasErrors,
+  normalizeForHash,
+  parseTopicMap,
+  planImport,
+} from "../lib/content/import.ts";
 import { computeTopicAggregate } from "../lib/progress/topicAggregate.ts";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -399,7 +405,7 @@ async function insertQuestion(client, item, topicId, now) {
 /**
  * @typedef {Object} ImportOutcome
  * @property {"created" | "updated" | "replaced" | "skipped"} outcome
- * @property {string | null} warning
+ * @property {Array<{code: string, message: string}>} warnings
  */
 
 /**
@@ -424,21 +430,31 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
   if (hashMatches.length > 1) {
     // Уникального индекса на contentHash нет: чинить дубли — отдельная задача.
     // Здесь важно хотя бы не молчать.
-    const warning = `в теме несколько вопросов с одинаковым contentHash (${hashMatches.length}); обновлён первый.`;
+    const warning = {
+      code: "duplicate_hash",
+      message: `в теме несколько вопросов с одинаковым contentHash (${hashMatches.length}); обновлён первый.`,
+    };
     const row = hashMatches[0];
-    if (!row) return { outcome: "skipped", warning };
+    if (!row) return { outcome: "skipped", warnings: [warning] };
 
     if (row.status === "ARCHIVED") {
       return {
         outcome: "skipped",
-        warning: `${warning} вопрос в архиве и не будет опубликован.`,
+        warnings: [
+          { ...warning, message: `${warning.message} Вопрос в архиве и не будет опубликован.` },
+        ],
       };
     }
 
     if (item.status === "DRAFT" && row.status === "PUBLISHED") {
       return {
         outcome: "skipped",
-        warning: `${warning} вопрос уже опубликован, черновик из файла не применяется.`,
+        warnings: [
+          {
+            ...warning,
+            message: `${warning.message} Вопрос уже опубликован, черновик из файла не применяется.`,
+          },
+        ],
       };
     }
 
@@ -453,10 +469,10 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
       }
       row.explanation = item.explanation;
       row.status = item.status;
-      return { outcome: "updated", warning };
+      return { outcome: "updated", warnings: [warning] };
     }
 
-    return { outcome: "skipped", warning };
+    return { outcome: "skipped", warnings: [warning] };
   }
 
   const row = hashMatches[0];
@@ -465,21 +481,31 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
     if (row.status === "ARCHIVED") {
       return {
         outcome: "skipped",
-        warning:
-          "вопрос в архиве; повторная публикация из файла не выполняется, чтобы не отменять решение редактора.",
+        warnings: [
+          {
+            code: "existing_question",
+            message:
+              "вопрос в архиве; повторная публикация из файла не выполняется, чтобы не отменять решение редактора.",
+          },
+        ],
       };
     }
 
     if (item.status === "DRAFT" && row.status === "PUBLISHED") {
       return {
         outcome: "skipped",
-        warning:
-          "в файле нет объяснения, но вопрос уже опубликован — оставлен как есть. Черновик не применяется.",
+        warnings: [
+          {
+            code: "existing_question",
+            message:
+              "в файле нет объяснения, но вопрос уже опубликован — оставлен как есть. Черновик не применяется.",
+          },
+        ],
       };
     }
 
     if (row.explanation === item.explanation && row.status === item.status) {
-      return { outcome: "skipped", warning: null };
+      return { outcome: "skipped", warnings: [] };
     }
 
     if (!dryRun) {
@@ -492,22 +518,27 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
     }
     row.explanation = item.explanation;
     row.status = item.status;
-    return { outcome: "updated", warning: null };
+    return { outcome: "updated", warnings: [] };
   }
 
   // Хеша нет, но текст совпадает: это исправленная версия вопроса.
   // Демо-вопросы не считаем версией: это заглушка, её скрывает отдельный шаг.
   const textKey = normalizeForHash(item.text);
-  const previousVersions = (cache.byText.get(textKey) ?? []).filter((row) => !row.isDemo);
-  const hasLivePrevious = previousVersions.some((row) => row.status !== "ARCHIVED");
+  const previousVersions = (cache.byText.get(textKey) ?? []).filter((cached) => !cached.isDemo);
+  const hasLivePrevious = previousVersions.some((cached) => cached.status !== "ARCHIVED");
 
   // Нельзя архивировать живой вопрос ради черновика без объяснения: пользователь
   // потеряет вопрос из каталога и тренировок.
   if (item.status === "DRAFT" && hasLivePrevious) {
     return {
       outcome: "skipped",
-      warning:
-        "в файле нет объяснения, но вопрос с таким текстом уже есть в теме — оставлен как есть. Черновик не применяется.",
+      warnings: [
+        {
+          code: "existing_question",
+          message:
+            "в файле нет объяснения, но вопрос с таким текстом уже есть в теме — оставлен как есть. Черновик не применяется.",
+        },
+      ],
     };
   }
 
@@ -543,14 +574,38 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
     cache.byText.set(textKey, [inserted]);
   }
 
+  /** @type {Array<{code: string, message: string}>} */
+  const warnings = [];
+
   if (previousVersions.length > 0) {
-    return {
-      outcome: "replaced",
-      warning: "новая версия вопроса: предыдущая формулировка переведена в архив.",
-    };
+    warnings.push({
+      code: hasLivePrevious ? "new_version" : "archived_version",
+      message: hasLivePrevious
+        ? "новая версия вопроса: предыдущая формулировка переведена в архив."
+        : "в теме был архивный вопрос с таким текстом; создана новая версия — проверьте, не отменяет ли это решение редактора.",
+    });
+    return { outcome: "replaced", warnings };
   }
 
-  return { outcome: "created", warning: null };
+  // Изменение формулировки неотличимо от нового вопроса: точной идентичности у
+  // forms_writer нет. Предупреждаем, если текст почти совпал с существующим.
+  const similar = cache.rows.find(
+    (cached) =>
+      cached !== inserted &&
+      !cached.isDemo &&
+      cached.status !== "ARCHIVED" &&
+      areTextsSimilar(cached.text, item.text),
+  );
+  if (similar) {
+    warnings.push({
+      code: "possible_duplicate_text",
+      message: `похоже на существующий вопрос «${similar.text.slice(0, 80)}${
+        similar.text.length > 80 ? "…" : ""
+      }». Вопрос создан как новый: если это правка формулировки, старую версию нужно архивировать вручную.`,
+    });
+  }
+
+  return { outcome: "created", warnings };
 }
 
 /**
@@ -578,18 +633,27 @@ async function recalculateTopicProgress(client, topicId, now) {
   );
   const totalQuestions = totalResult.rows[0]?.total ?? 0;
 
-  for (const user of users.rows) {
-    const progressResult = await client.query(
-      `SELECT qp."masteryLevel", qp."seenCount", qp."correctCount"
-         FROM "QuestionProgress" qp
-         JOIN "Question" q ON q.id = qp."questionId"
-        WHERE qp."userId" = $1
-          AND q."topicId" = $2
-          AND q.status = 'PUBLISHED'`,
-      [user.userId, topicId],
-    );
+  // Один запрос на все темы вместо запроса на каждого пользователя: при
+  // нескольких тысячах пользователей N+1 внутри транзакции недопустим.
+  const progressResult = await client.query(
+    `SELECT qp."userId", qp."masteryLevel", qp."seenCount", qp."correctCount"
+       FROM "QuestionProgress" qp
+       JOIN "Question" q ON q.id = qp."questionId"
+      WHERE q."topicId" = $1
+        AND q.status = 'PUBLISHED'`,
+    [topicId],
+  );
 
-    const aggregate = computeTopicAggregate(totalQuestions, progressResult.rows);
+  /** @type {Map<string, Array<{masteryLevel: number, seenCount: number, correctCount: number}>>} */
+  const byUser = new Map();
+  for (const row of progressResult.rows) {
+    const list = byUser.get(row.userId) ?? [];
+    list.push(row);
+    byUser.set(row.userId, list);
+  }
+
+  for (const user of users.rows) {
+    const aggregate = computeTopicAggregate(totalQuestions, byUser.get(user.userId) ?? []);
 
     await client.query(
       `UPDATE "TopicProgress"
@@ -640,6 +704,48 @@ function countBySeverity(issues) {
 }
 
 /**
+ * Собирает отчёт об импорте. Вынесено отдельно, чтобы отчёт можно было
+ * сохранить и при успехе, и при откате `--strict`.
+ *
+ * @param {Args} args
+ * @param {Record<string, number>} counts
+ * @param {number} progressRecalculated
+ * @param {Map<string, TopicStats>} topicStats
+ * @param {Array<Object>} issues
+ * @param {Array<{index: number, sourceTopic: string, text: string, context: string}>} contexts
+ * @returns {Object}
+ */
+function buildReport(args, counts, progressRecalculated, topicStats, issues, contexts) {
+  const severity = countBySeverity(issues);
+  return {
+    ok: severity.errors === 0,
+    file: path.resolve(args.file),
+    map: path.resolve(args.map),
+    dryRun: args.dryRun,
+    createTopics: args.createTopics,
+    keepDemo: args.keepDemo,
+    strict: args.strict,
+    counts: { ...counts, progressRecalculated, ...severity },
+    topics: [...topicStats.values()],
+    // «Завязки» пока не хранятся в БД: сохраняем их в отчёт, чтобы не потерять.
+    contexts,
+    issues,
+  };
+}
+
+/**
+ * @param {string | null} reportPath
+ * @param {Object} report
+ * @returns {Promise<void>}
+ */
+async function saveReport(reportPath, report) {
+  if (!reportPath) return;
+  const resolved = path.resolve(reportPath);
+  await mkdir(path.dirname(resolved), { recursive: true });
+  await writeFile(resolved, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+/**
  * @param {Array<{severity: string, index: number | null, sourceTopic: string | null, message: string}>} issues
  */
 function printIssues(issues) {
@@ -653,7 +759,10 @@ function printIssues(issues) {
 
 /** @returns {Promise<number>} код завершения процесса */
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  // До разбора аргументов: если упадёт парсер, --json всё равно даст JSON.
+  jsonMode = argv.some((arg) => arg === "--json" || arg.startsWith("--json="));
+  const args = parseArgs(argv);
   jsonMode = args.json;
 
   if (args.help) {
@@ -684,18 +793,19 @@ async function main() {
             map: path.resolve(args.map),
             dryRun: args.dryRun,
             counts: {
-              total: 0,
+              total: plan.items.length,
               created: 0,
               updated: 0,
               replaced: 0,
               skipped: 0,
               notImported: plan.items.length,
-              draft: 0,
+              draft: plan.items.filter((item) => item.status === "DRAFT").length,
               demoArchived: 0,
-              withContext: 0,
+              withContext: plan.items.filter((item) => item.context !== null).length,
               ...countBySeverity(issues),
             },
             topics: [],
+            contexts: [],
             issues,
           },
           null,
@@ -739,6 +849,8 @@ async function main() {
   /** @type {Map<string, TopicCache>} */
   const caches = new Map();
   let progressRecalculated = 0;
+  /** @type {Object | null} */
+  let report = null;
 
   try {
     if (useTransaction) {
@@ -762,6 +874,28 @@ async function main() {
 
       const target = map.get(item.sourceTopic);
       if (!target) continue;
+
+      const existingTopic = topics.get(target.topic);
+      if (existingTopic && existingTopic.category_slug !== target.category) {
+        issues.push({
+          index: item.index,
+          sourceTopic: item.sourceTopic,
+          code: "topic_category_mismatch",
+          severity: "error",
+          message: `Тема «${target.topic}» уже существует в разделе «${existingTopic.category_slug}», а маппинг указывает «${target.category}». Исправьте scripts/import/topic-map.json — молча переносить тему нельзя.`,
+        });
+        resolved.set(item.topicSlug, {
+          slug: item.topicSlug,
+          id: "__missing__",
+          title: "",
+          categorySlug: item.categorySlug,
+          status: "MISSING",
+          created: false,
+          target,
+          sourceTopic: item.sourceTopic,
+        });
+        continue;
+      }
 
       const ensured = await ensureTopic(
         client,
@@ -832,7 +966,6 @@ async function main() {
       };
 
       let outcome = "created";
-      let warning = null;
 
       if (target.id === null) {
         // dry-run + --create-topics: темы ещё нет, значит вопрос точно новый.
@@ -847,17 +980,16 @@ async function main() {
 
         const result = await importItem(client, item, target.id, cache, args.dryRun, now);
         outcome = result.outcome;
-        warning = result.warning;
         counts[outcome] += 1;
         stats[outcome] += 1;
 
-        if (warning) {
+        for (const warning of result.warnings) {
           issues.push({
             index: item.index,
             sourceTopic: item.sourceTopic,
-            code: outcome === "skipped" ? "existing_question" : "new_version",
+            code: warning.code,
             severity: "warning",
-            message: `Вопрос #${item.index}: ${warning}`,
+            message: `Вопрос #${item.index}: ${warning.message}`,
           });
         }
       }
@@ -913,6 +1045,20 @@ async function main() {
     }
 
     const severityBeforeCommit = countBySeverity(issues);
+    const contexts = plan.items
+      .filter((item) => item.context)
+      .map((item) => ({
+        index: item.index,
+        sourceTopic: item.sourceTopic,
+        text: item.text,
+        context: item.context,
+      }));
+
+    report = buildReport(args, counts, progressRecalculated, topicStats, issues, contexts);
+    // Отчёт пишем до фиксации транзакции: если файл не сохранился, импорт
+    // откатывается, а не оставляет «успех без отчёта».
+    await saveReport(args.report, report);
+
     if (args.strict && severityBeforeCommit.errors > 0) {
       throw new Error(
         `--strict: найдено ошибок ${severityBeforeCommit.errors}, изменения отменены.`,
@@ -926,35 +1072,22 @@ async function main() {
     if (useTransaction) {
       await client.query("ROLLBACK").catch(() => undefined);
     }
+    if (report && error instanceof Error) {
+      error.report = report;
+    }
     throw error;
   } finally {
     await client.end();
   }
 
   const severity = countBySeverity(issues);
-  const report = {
-    ok: severity.errors === 0,
-    file: path.resolve(args.file),
-    map: path.resolve(args.map),
-    dryRun: args.dryRun,
-    createTopics: args.createTopics,
-    keepDemo: args.keepDemo,
-    strict: args.strict,
-    counts: { ...counts, progressRecalculated, ...severity },
-    topics: [...topicStats.values()],
-    issues,
-  };
-
-  if (args.report) {
-    await mkdir(path.dirname(path.resolve(args.report)), { recursive: true });
-    await writeFile(path.resolve(args.report), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  }
+  const finalReport = report ?? buildReport(args, counts, progressRecalculated, topicStats, issues, []);
 
   if (args.json) {
-    console.log(JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(finalReport, null, 2));
   } else {
     console.log(`Импорт вопросов${args.dryRun ? " (dry-run, без записи)" : ""}`);
-    console.log(`Файл: ${report.file}`);
+    console.log(`Файл: ${finalReport.file}`);
     console.log(
       `Всего: ${counts.total}, создано: ${counts.created}, обновлено: ${counts.updated}, новых версий: ${counts.replaced}, пропущено: ${counts.skipped}, черновиков: ${counts.draft}`,
     );
@@ -992,10 +1125,25 @@ main()
   })
   .catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
+    const report = error && typeof error === "object" ? error.report : null;
     if (jsonMode) {
-      console.log(JSON.stringify({ ok: false, error: message }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            ok: false,
+            error: message,
+            counts: report?.counts ?? null,
+            issues: report?.issues ?? [],
+          },
+          null,
+          2,
+        ),
+      );
     } else {
       console.error("Импорт не выполнен:", message);
+      if (report?.issues?.length) {
+        printIssues(report.issues);
+      }
     }
     process.exitCode = 1;
   });

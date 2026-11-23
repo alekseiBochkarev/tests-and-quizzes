@@ -82,7 +82,7 @@ async function upsertTopic(client, topic, categoryId, order) {
        title = EXCLUDED.title,
        description = EXCLUDED.description,
        "order" = EXCLUDED."order",
-       status = 'PUBLISHED',
+       -- status не перезаписываем: архив темы — решение редактора, сид его не отменяет.
        "updatedAt" = EXCLUDED."updatedAt"`,
     [id, categoryId, topic.slug, topic.title, topic.description ?? null, order, now],
   );
