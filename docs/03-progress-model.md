@@ -370,7 +370,8 @@ lastActiveDate = today
 ### 6.1. Старт попытки
 
 ```
-POST /api/v1/attempts { quizId, mode }
+POST /api/v1/attempts { quizId, mode: "TRAINING" }        # готовый выпуск
+POST /api/v1/attempts { topicId или categoryId, count, mode }  # тренировка
 → создаём Attempt(status=IN_PROGRESS)
 → фиксируем порядок вопросов и вариантов
 → возвращаем вопросы без правильных ответов
@@ -499,7 +500,10 @@ POST /api/v1/attempts { quizId, mode }
 См. ТЗ §9. Для прогресса важны:
 
 - `Attempt.status` (`IN_PROGRESS`, `COMPLETED`, `ABANDONED`);
-- `Attempt.mode` (`classic`, `daily`, `review`, `exam`);
+- `Attempt.mode` (`TRAINING`, `REVIEW`); новые режимы (тест дня, экзамен) — позже;
+- `Attempt.quizId?` — если попытка создана из готового выпуска; для прогресса это
+  обычная попытка, баллы и mastery считаются так же;
+- `Attempt.categoryId?` / `topicId?` — охват тренировки;
 - `AttemptAnswer.isCorrect`, `responseMs`, `answeredAt`;
 - `AttemptAnswer.questionVersion` — чтобы изменения вопроса не ломали историю.
 

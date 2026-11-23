@@ -11,6 +11,7 @@ import { login, registerAndVerify } from "./helpers";
 
 const TOPIC_SLUG = "history";
 const TOPIC_TITLE = "История";
+const QUIZ_TITLE = "История: основной выпуск";
 
 async function answerCurrentQuestion(page: Page): Promise<void> {
   await page.getByRole("radio").first().check();
@@ -75,6 +76,48 @@ test.describe("Учебный контур", () => {
       page
         .getByRole("region", { name: "Последние тренировки" })
         .getByRole("link", { name: TOPIC_TITLE }),
+    ).toBeVisible();
+  });
+
+  test("готовый выпуск: постоянная ссылка, прохождение и результат", async ({ page }) => {
+    const email = await registerAndVerify(page, "quiz");
+    await login(page, email);
+    await expect(page).toHaveURL(/\/account$/);
+
+    await page.goto(`/tests/${TOPIC_SLUG}`);
+    await expect(page.getByRole("heading", { name: "Готовые выпуски" })).toBeVisible();
+    await page.getByRole("link", { name: "Открыть выпуск" }).first().click();
+
+    await expect(page).toHaveURL(new RegExp(`/tests/${TOPIC_SLUG}/[^/]+$`));
+    await expect(page.getByRole("heading", { name: QUIZ_TITLE, exact: true })).toBeVisible();
+
+    // Постоянная ссылка: перезагрузка открывает тот же выпуск.
+    await page.reload();
+    await expect(page.getByRole("heading", { name: QUIZ_TITLE, exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Начать выпуск: 10 вопросов" }).click();
+    await expect(page).toHaveURL(/\/attempts\/[^/]+$/);
+
+    for (let index = 1; index <= 10; index += 1) {
+      await expect(page.getByText(`Вопрос ${index} из 10`)).toBeVisible();
+      await answerCurrentQuestion(page);
+
+      if (index < 10) {
+        await page.getByRole("button", { name: "Следующий вопрос" }).click();
+      }
+    }
+
+    await page.getByRole("button", { name: "Показать результат" }).click();
+    await expect(page).toHaveURL(/\/attempts\/[^/]+\/result$/);
+    await expect(page.getByText(`Выпуск «${QUIZ_TITLE}»`)).toBeVisible();
+    await expect(page.getByText(/из 10 вопросов верно/)).toBeVisible();
+
+    // Результат выпуска — обычная попытка в истории.
+    await page.goto("/account");
+    await expect(
+      page
+        .getByRole("region", { name: "Последние тренировки" })
+        .getByRole("link", { name: QUIZ_TITLE }),
     ).toBeVisible();
   });
 

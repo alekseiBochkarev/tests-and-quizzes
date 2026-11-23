@@ -15,6 +15,10 @@ import { catalog } from "./seed/content/index.mjs";
 
 const now = new Date();
 
+// Готовый выпуск: 10–12 вопросов. Демо-выпуск берёт первые 10 вопросов темы.
+const QUIZ_MIN_QUESTIONS = 10;
+const QUIZ_QUESTION_LIMIT = 10;
+
 function assertContent() {
   const seenTopicSlugs = new Set();
 
@@ -134,6 +138,48 @@ async function upsertQuestion(client, topic, question, index, topicId) {
   }
 }
 
+async function upsertQuiz(client, topic, topicId) {
+  if (topic.questions.length < QUIZ_MIN_QUESTIONS) return false;
+
+  const quizId = `seed-quiz-${topic.slug}`;
+  const title = `${topic.title}: основной выпуск`;
+  const description = `Набор из ${QUIZ_QUESTION_LIMIT} вопросов по теме «${topic.title}».`;
+
+  await client.query(
+    `INSERT INTO "Quiz" (id, "topicId", slug, title, description, status, "isDemo", "createdAt", "updatedAt")
+     VALUES ($1, $2, 'release-1', $3, $4, 'PUBLISHED', true, $5, $5)
+     ON CONFLICT (id) DO UPDATE SET
+       "topicId" = EXCLUDED."topicId",
+       slug = EXCLUDED.slug,
+       title = EXCLUDED.title,
+       description = EXCLUDED.description,
+       -- status не перезаписываем: архивация выпуска — решение редактора,
+       -- повторный сид не должен возвращать его в каталог.
+       "updatedAt" = EXCLUDED."updatedAt"`,
+    [quizId, topicId, title, description, now],
+  );
+
+  // Пересобираем состав только этого демо-выпуска: если контент сократился,
+  // лишние позиции не должны остаться в наборе.
+  await client.query(`DELETE FROM "QuizQuestion" WHERE "quizId" = $1`, [quizId]);
+
+  const selected = topic.questions.slice(0, QUIZ_QUESTION_LIMIT);
+  for (const [index] of selected.entries()) {
+    await client.query(
+      `INSERT INTO "QuizQuestion" (id, "quizId", "questionId", "order")
+       VALUES ($1, $2, $3, $4)`,
+      [
+        `seed-qq-${topic.slug}-${index + 1}`,
+        quizId,
+        `seed-q-${topic.slug}-${index + 1}`,
+        index,
+      ],
+    );
+  }
+
+  return true;
+}
+
 async function main() {
   assertContent();
 
@@ -147,6 +193,7 @@ async function main() {
 
   let topicCount = 0;
   let questionCount = 0;
+  let quizCount = 0;
 
   try {
     await client.query("BEGIN");
@@ -167,6 +214,10 @@ async function main() {
           await upsertQuestion(client, topic, question, questionIndex, topicId);
           questionCount += 1;
         }
+
+        if (await upsertQuiz(client, topic, topicId)) {
+          quizCount += 1;
+        }
       }
     }
 
@@ -179,7 +230,7 @@ async function main() {
   }
 
   console.log(
-    `Сид завершён: ${catalog.length} разделов, ${topicCount} тем, ${questionCount} вопросов.`,
+    `Сид завершён: ${catalog.length} разделов, ${topicCount} тем, ${questionCount} вопросов, ${quizCount} выпусков.`,
   );
 }
 

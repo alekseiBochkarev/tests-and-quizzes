@@ -5,6 +5,7 @@ import type { Prisma } from "@/lib/generated/prisma/client";
 import { nextQuestionProgress } from "@/lib/progress/mastery";
 import { levelForXp } from "@/lib/progress/level";
 import { selectQuestions, type QuestionCandidate } from "@/lib/progress/scoring";
+import { lookupPlayableQuiz } from "@/lib/quizzes/service";
 import {
   computeTopicAggregate,
   nextDailyStreak,
@@ -40,7 +41,8 @@ export class AttemptError extends Error {
 export type CreateAttemptInput = {
   topicId?: string;
   categoryId?: string;
-  count: number;
+  quizId?: string;
+  count?: number;
   mode: AttemptModeType;
 };
 
@@ -74,7 +76,9 @@ async function loadCandidates(
     }),
     prisma.userInterest.findMany({ where: { userId }, select: { topicId: true } }),
     prisma.question.findMany({
-      where: { id: { in: questionIds } },
+      // Статус проверяем ещё раз: вопрос мог уйти в архив между выборкой
+      // состава выпуска и созданием попытки.
+      where: { id: { in: questionIds }, status: ContentStatus.PUBLISHED },
       select: { id: true, topicId: true },
     }),
   ]);
@@ -104,8 +108,18 @@ export async function createAttempt(
   userId: string,
   input: CreateAttemptInput,
 ): Promise<CreateAttemptResult> {
-  const count = assertCount(input.count);
   const now = new Date();
+  const isQuiz = Boolean(input.quizId);
+
+  if (isQuiz && (input.mode !== AttemptMode.TRAINING || input.topicId || input.categoryId)) {
+    throw new AttemptError(
+      "invalid_scope",
+      400,
+      "Выпуск проходят отдельно: выберите выпуск или тренировку по теме.",
+    );
+  }
+
+  const count = isQuiz ? null : assertCount(input.count ?? 0);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -117,8 +131,39 @@ export async function createAttempt(
   let balanceByTopic = false;
   let categoryId: string | null = null;
   let topicId: string | null = null;
+  let quizId: string | null = null;
 
-  if (input.mode === AttemptMode.REVIEW) {
+  if (input.quizId) {
+    const lookup = await lookupPlayableQuiz(input.quizId);
+
+    if (lookup.status === "not_found") {
+      throw new AttemptError("quiz_not_found", 404, "Выпуск не найден.");
+    }
+    if (lookup.status === "unavailable") {
+      throw new AttemptError(
+        "quiz_unavailable",
+        409,
+        "Этот выпуск пока недоступен. Выберите тренировку по теме.",
+      );
+    }
+
+    quizId = lookup.quiz.id;
+    topicId = lookup.quiz.topicId;
+
+    const loaded = await loadCandidates(userId, lookup.quiz.questionIds);
+    const candidatesById = new Map(loaded.candidates.map((item) => [item.questionId, item]));
+    selected = lookup.quiz.questionIds
+      .map((questionId) => candidatesById.get(questionId))
+      .filter((candidate): candidate is QuestionCandidate => Boolean(candidate));
+
+    if (selected.length !== lookup.quiz.questionIds.length) {
+      throw new AttemptError(
+        "quiz_unavailable",
+        409,
+        "В выпуске не хватает вопросов. Выберите тренировку по теме.",
+      );
+    }
+  } else if (input.mode === AttemptMode.REVIEW) {
     if (input.topicId) {
       const topic = await prisma.topic.findFirst({
         where: { id: input.topicId, status: ContentStatus.PUBLISHED },
@@ -143,7 +188,7 @@ export async function createAttempt(
     const questionIds = reviewRows.map((row) => row.questionId);
     const loaded = await loadCandidates(userId, questionIds);
     selected = selectQuestions(loaded.candidates, {
-      count: Math.min(count, REVIEW_LIMIT),
+      count: Math.min(count ?? 0, REVIEW_LIMIT),
       now,
     });
 
@@ -201,7 +246,7 @@ export async function createAttempt(
     }
 
     const loaded = await loadCandidates(userId, questionIds);
-    selected = selectQuestions(loaded.candidates, { count, now, balanceByTopic });
+    selected = selectQuestions(loaded.candidates, { count: count ?? 0, now, balanceByTopic });
 
     if (selected.length === 0) {
       throw new AttemptError(
@@ -220,6 +265,7 @@ export async function createAttempt(
         userId,
         categoryId,
         topicId,
+        quizId,
         mode: input.mode,
         status: AttemptStatus.IN_PROGRESS,
         questionCount,
@@ -280,6 +326,7 @@ export type AttemptState = {
   durationSec: number | null;
   topicTitle: string | null;
   categoryTitle: string | null;
+  quizTitle: string | null;
   currentOrder: number;
   questions: AttemptQuestionPayload[];
 };
@@ -293,6 +340,7 @@ export async function getAttemptState(
     include: {
       topic: { select: { title: true } },
       category: { select: { title: true } },
+      quiz: { select: { title: true } },
       answers: {
         orderBy: { order: "asc" },
         include: {
@@ -343,6 +391,7 @@ export async function getAttemptState(
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
     categoryTitle: attempt.category?.title ?? null,
+    quizTitle: attempt.quiz?.title ?? null,
     currentOrder: firstUnanswered?.order ?? questions.length,
     questions,
   };
@@ -599,6 +648,7 @@ export type AttemptResult = {
   durationSec: number | null;
   topicTitle: string | null;
   categoryTitle: string | null;
+  quizTitle: string | null;
   topics: Array<{ title: string; total: number; correct: number }>;
   mistakes: Array<{
     questionId: string;
@@ -619,6 +669,7 @@ export async function getAttemptResult(
     include: {
       topic: { select: { title: true } },
       category: { select: { title: true } },
+      quiz: { select: { title: true } },
       answers: {
         orderBy: { order: "asc" },
         include: {
@@ -679,6 +730,7 @@ export async function getAttemptResult(
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
     categoryTitle: attempt.category?.title ?? null,
+    quizTitle: attempt.quiz?.title ?? null,
     topics: [...topicMap.values()],
     mistakes,
   };

@@ -204,11 +204,13 @@ async function loadContinueCard(userId: string): Promise<ContinueCard | null> {
     include: {
       topic: { select: { title: true } },
       category: { select: { title: true } },
+      quiz: { select: { title: true } },
     },
   });
 
   if (activeAttempt) {
     const title =
+      activeAttempt.quiz?.title ??
       activeAttempt.topic?.title ??
       activeAttempt.category?.title ??
       "Тренировка";
@@ -284,6 +286,7 @@ export async function getAccountData(userId: string): Promise<AccountData> {
       include: {
         topic: { select: { title: true } },
         category: { select: { title: true } },
+        quiz: { select: { title: true } },
       },
     }),
   ]);
@@ -318,7 +321,7 @@ export async function getAccountData(userId: string): Promise<AccountData> {
 
   const history: AttemptHistoryItem[] = historyRows.map((attempt) => ({
     id: attempt.id,
-    title: attempt.topic?.title ?? attempt.category?.title ?? "Тренировка",
+    title: attempt.quiz?.title ?? attempt.topic?.title ?? attempt.category?.title ?? "Тренировка",
     finishedAt: attempt.finishedAt,
     correctCount: attempt.correctCount,
     questionCount: attempt.questionCount,

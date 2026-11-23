@@ -3,10 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StartTraining } from "@/components/content/StartTraining";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { countDueQuestions } from "@/lib/attempts/service";
 import { getTopicBySlug } from "@/lib/content/catalog";
+import { getTopicQuizzes } from "@/lib/quizzes/service";
 import { questionWord, topicLevelLabel } from "@/lib/ui/text";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +35,7 @@ export default async function TopicPage({ params }: PageProps) {
   if (!topic) notFound();
 
   const reviewCount = user ? await countDueQuestions(user.id, topic.id) : 0;
+  const quizzes = await getTopicQuizzes(topic.id);
   const progress = topic.progress;
 
   return (
@@ -79,6 +83,38 @@ export default async function TopicPage({ params }: PageProps) {
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {quizzes.length > 0 ? (
+        <section aria-labelledby="quizzes-title" className="max-w-3xl space-y-4">
+          <div className="space-y-2">
+            <h2 id="quizzes-title" className="text-2xl font-bold">
+              Готовые выпуски
+            </h2>
+            <p className="text-base text-ink-soft">
+              Набор на 10–12 вопросов: удобно пройти за один раз и вернуться по постоянной
+              ссылке.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {quizzes.map((quiz) => (
+              <Card key={quiz.id} className="space-y-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h3 className="text-xl font-bold">{quiz.title}</h3>
+                  <p className="text-base font-semibold text-muted">
+                    {quiz.questionCount} {questionWord(quiz.questionCount)}
+                  </p>
+                </div>
+                {quiz.description ? (
+                  <p className="text-base text-ink-soft">{quiz.description}</p>
+                ) : null}
+                <Button href={`/tests/${topic.slug}/${quiz.slug}`} variant="secondary">
+                  Открыть выпуск
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       <div className="max-w-3xl">

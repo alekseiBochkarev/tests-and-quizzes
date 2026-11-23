@@ -17,16 +17,19 @@ export const dynamic = "force-dynamic";
 const createAttemptSchema = z.object({
   topicId: z.string().min(1).max(64).optional(),
   categoryId: z.string().min(1).max(64).optional(),
-  count: z.union([
-    z.literal(ATTEMPT_COUNTS[0]),
-    z.literal(ATTEMPT_COUNTS[1]),
-    z.literal(ATTEMPT_COUNTS[2]),
-    z.literal(ATTEMPT_COUNTS[3]),
-  ]),
+  quizId: z.string().min(1).max(64).optional(),
+  count: z
+    .union([
+      z.literal(ATTEMPT_COUNTS[0]),
+      z.literal(ATTEMPT_COUNTS[1]),
+      z.literal(ATTEMPT_COUNTS[2]),
+      z.literal(ATTEMPT_COUNTS[3]),
+    ])
+    .optional(),
   mode: z.enum(["TRAINING", "REVIEW"]).default("TRAINING"),
 });
 
-/** POST /api/v1/attempts — начать тренировку по теме, разделу или повторение. */
+/** POST /api/v1/attempts — начать тренировку по теме, разделу, выпуску или повторение. */
 export async function POST(request: Request) {
   const requestId = getRequestId(request);
 
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
 
   const parsed = createAttemptSchema.safeParse(bodyResult.body);
   if (!parsed.success) {
-    return fail("validation_error", "Выберите тему, раздел и количество вопросов.", {
+    return fail("validation_error", "Выберите тему, раздел, выпуск или количество вопросов.", {
       requestId,
       status: 400,
     });

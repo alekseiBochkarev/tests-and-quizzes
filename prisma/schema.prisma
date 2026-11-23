@@ -171,6 +171,7 @@ model Topic {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   questions Question[]
+  quizzes   Quiz[]
   interests UserInterest[]
   attempts  Attempt[]
   progress  TopicProgress[]
@@ -201,6 +202,7 @@ model Question {
   options        QuestionOption[]
   attemptAnswers AttemptAnswer[]
   progress       QuestionProgress[]
+  quizLinks      QuizQuestion[]
 
   @@index([topicId, status])
   @@index([contentHash])
@@ -218,6 +220,41 @@ model QuestionOption {
   answers AttemptAnswer[] @relation("SelectedOption")
 
   @@unique([questionId, order])
+  @@index([questionId])
+}
+
+// Готовый выпуск: именованный набор 10–12 вопросов внутри темы.
+model Quiz {
+  id          String        @id @default(cuid())
+  topicId     String
+  slug        String
+  title       String
+  description String?
+  status      ContentStatus @default(PUBLISHED)
+  // Демо-выпуск из сида: пометка для админки и будущей замены контента.
+  isDemo      Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  topic     Topic          @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  questions QuizQuestion[]
+  attempts  Attempt[]
+
+  @@unique([topicId, slug])
+  @@index([topicId, status])
+}
+
+model QuizQuestion {
+  id         String @id @default(cuid())
+  quizId     String
+  questionId String
+  order      Int
+
+  quiz     Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([quizId, questionId])
+  @@unique([quizId, order])
   @@index([questionId])
 }
 
@@ -243,6 +280,7 @@ model Attempt {
   userId        String
   categoryId    String?
   topicId       String?
+  quizId        String?
   mode          AttemptMode   @default(TRAINING)
   status        AttemptStatus @default(IN_PROGRESS)
   questionCount Int
@@ -258,12 +296,14 @@ model Attempt {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   topic    Topic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  quiz     Quiz?     @relation(fields: [quizId], references: [id], onDelete: SetNull)
 
   answers AttemptAnswer[]
 
   @@index([userId, startedAt])
   @@index([status])
   @@index([topicId])
+  @@index([quizId])
 }
 
 model AttemptAnswer {
