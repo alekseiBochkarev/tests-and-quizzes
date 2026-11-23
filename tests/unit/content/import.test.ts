@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  areTextsSimilar,
   buildContentHash,
   hasErrors,
   normalizeForHash,
@@ -16,6 +17,8 @@ function loadMap(): TopicMap {
     topics: {
       История: { category: "nauka", topic: "history" },
       География: { category: "priroda", topic: "geography" },
+      Физика: { category: "nauka", topic: "exact-sciences" },
+      Химия: { category: "nauka", topic: "exact-sciences" },
     },
   });
 
@@ -50,6 +53,38 @@ describe("normalizeForHash", () => {
     expect(normalizeForHash("Кто написал Мону Лизу?")).toBe(
       normalizeForHash("Кто написал Мону Лизу"),
     );
+  });
+
+  it("не зависит от внешних кавычек вокруг всего текста", () => {
+    expect(normalizeForHash("«Война и мир»")).toBe(normalizeForHash("Война и мир"));
+  });
+
+  it("сохраняет кавычки внутри текста", () => {
+    expect(normalizeForHash("Фильм «Москва слезам не верит»")).toContain('"москва');
+  });
+});
+
+describe("areTextsSimilar", () => {
+  it("видит переформулированный вопрос", () => {
+    expect(
+      areTextsSimilar(
+        "В каком году пала Западная Римская империя?",
+        "В каком году прекратила существование Западная Римская империя?",
+      ),
+    ).toBe(true);
+  });
+
+  it("не путает разные вопросы одной темы", () => {
+    expect(
+      areTextsSimilar(
+        "В каком году пала Западная Римская империя?",
+        "Кто был первым президентом Соединённых Штатов Америки?",
+      ),
+    ).toBe(false);
+  });
+
+  it("не сравнивает короткие тексты, где совпадение случайно", () => {
+    expect(areTextsSimilar("Кто это?", "Кто там?")).toBe(false);
   });
 });
 
@@ -182,7 +217,8 @@ describe("planImport", () => {
     expect(plan.items).toHaveLength(1);
     expect(plan.items[0]?.status).toBe("PUBLISHED");
     expect(plan.items[0]?.explanation).toBe("Полное объяснение.");
-    expect(codes(plan.issues)).toEqual(["missing_explanation", "duplicate_in_file"]);
+    // Предупреждение о черновике относится к вопросу #1, которого нет в плане.
+    expect(codes(plan.issues)).toEqual(["duplicate_in_file"]);
   });
 
   it("не публикует два вопроса с одним текстом и разными ответами", () => {
@@ -198,8 +234,24 @@ describe("planImport", () => {
 
     expect(plan.items).toHaveLength(1);
     expect(codes(plan.issues)).toEqual(["conflicting_duplicate"]);
-    expect(plan.issues[0]?.message).toContain("#2");
+    expect(plan.issues[0]?.message).toContain("что у вопроса #1");
     expect(hasErrors(plan.issues)).toBe(false);
+  });
+
+  it("считает дублем вопрос из двух исходных тем одной темы каталога", () => {
+    const plan = planImport(
+      {
+        questions: [
+          question({ topic: "Физика", question: "Чему равна скорость света в вакууме?" }),
+          question({ topic: "Химия", question: "Чему равна скорость света в вакууме?" }),
+        ],
+      },
+      map,
+    );
+
+    expect(plan.items).toHaveLength(1);
+    expect(plan.items[0]?.topicSlug).toBe("exact-sciences");
+    expect(codes(plan.issues)).toEqual(["duplicate_in_file"]);
   });
 
   it("отправляет вопрос без объяснения в черновики", () => {

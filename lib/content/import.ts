@@ -40,8 +40,13 @@ export type ImportIssueCode =
   | "missing_explanation"
   | "invalid_map"
   | "topic_archived"
+  | "topic_not_found"
   | "existing_question"
   | "new_version"
+  | "archived_version"
+  | "duplicate_hash"
+  | "possible_duplicate_text"
+  | "topic_category_mismatch"
   | "unknown_category";
 
 export type ImportIssue = {
@@ -87,7 +92,7 @@ const HASH_SEPARATOR = "\u001f";
  * импорте. Исходный текст в БД сохраняется как есть.
  */
 export function normalizeForHash(value: string): string {
-  return value
+  const normalized = value
     .normalize("NFKC")
     .toLowerCase()
     .replace(/ё/g, "е")
@@ -97,6 +102,43 @@ export function normalizeForHash(value: string): string {
     .trim()
     .replace(/[.!?…]+$/u, "")
     .trim();
+
+  // Внешние кавычки вокруг всего текста не меняют смысл: «Война и мир» и
+  // Война и мир — один и тот же вопрос. Кавычки внутри текста сохраняем.
+  if (normalized.length > 1 && normalized.startsWith('"') && normalized.endsWith('"')) {
+    return normalized.slice(1, -1).trim();
+  }
+
+  return normalized;
+}
+
+/**
+ * Грубая проверка «похоже на тот же вопрос другими словами».
+ *
+ * Точной идентичности у `forms_writer` нет, поэтому изменение формулировки
+ * создаёт новый вопрос. Чтобы такая правка не превращалась в молчаливый дубль,
+ * CLI сравнивает текст с уже существующими вопросами темы и предупреждает при
+ * высоком совпадении слов. Это подсказка, а не блокировка: решает редактор.
+ */
+export function areTextsSimilar(left: string, right: string): boolean {
+  const words = (value: string) =>
+    new Set(
+      normalizeForHash(value)
+        .split(" ")
+        .filter((word) => word.length > 2),
+    );
+
+  const first = words(left);
+  const second = words(right);
+  if (first.size < 3 || second.size < 3) return false;
+
+  let intersection = 0;
+  for (const word of first) {
+    if (second.has(word)) intersection += 1;
+  }
+
+  const union = first.size + second.size - intersection;
+  return intersection / union >= 0.6;
 }
 
 /**
@@ -253,6 +295,8 @@ export function parseFormsWriterFile(value: unknown): {
 type ValidationResult = {
   item: ImportItem | null;
   issues: ImportIssue[];
+  /** Предупреждения по самому вопросу; попадают в отчёт, только если вопрос остался в плане. */
+  warnings?: ImportIssue[];
 };
 
 function validateQuestion(raw: unknown, index: number, map: TopicMap): ValidationResult {
@@ -382,11 +426,12 @@ function validateQuestion(raw: unknown, index: number, map: TopicMap): Validatio
   }
 
   const explanation = readString(raw.explanation);
+  const warnings: ImportIssue[] = [];
   if (!explanation) {
-    issues.push(
+    warnings.push(
       issue(
         "missing_explanation",
-        `Вопрос #${position}: нет объяснения, вопрос сохранён как черновик и не показывается пользователям.`,
+        `Вопрос #${position}: нет объяснения — такой вопрос сохраняется как черновик и не показывается пользователям; уже опубликованный вопрос остаётся как есть.`,
         { index: position, sourceTopic, severity: "warning" },
       ),
     );
@@ -414,6 +459,7 @@ function validateQuestion(raw: unknown, index: number, map: TopicMap): Validatio
       status: explanation ? "PUBLISHED" : "DRAFT",
     },
     issues,
+    warnings,
   };
 }
 
@@ -438,6 +484,9 @@ export function planImport(fileValue: unknown, map: TopicMap): ImportPlan {
   const issues: ImportIssue[] = [...parsed.issues];
   const seenHashes = new Map<string, number>();
   const seenTexts = new Map<string, number>();
+  // Предупреждения по вопросу копим отдельно: дубль может вытеснить вопрос из
+  // плана, и тогда его предупреждения не должны попадать в отчёт.
+  const itemWarnings: ImportIssue[][] = [];
 
   for (const [index, raw] of parsed.questions.entries()) {
     const result = validateQuestion(raw, index, map);
@@ -451,6 +500,7 @@ export function planImport(fileValue: unknown, map: TopicMap): ImportPlan {
       if (existing && existing.status === "DRAFT" && item.status === "PUBLISHED") {
         // Дубль без объяснения не должен вытеснять полноценный вопрос.
         items[duplicatePosition] = item;
+        itemWarnings[duplicatePosition] = result.warnings ?? [];
         issues.push(
           issue(
             "duplicate_in_file",
@@ -498,8 +548,11 @@ export function planImport(fileValue: unknown, map: TopicMap): ImportPlan {
 
     seenHashes.set(item.contentHash, items.length);
     seenTexts.set(textKey, items.length);
+    itemWarnings.push(result.warnings ?? []);
     items.push(item);
   }
+
+  issues.push(...itemWarnings.flat());
 
   return { items, issues };
 }
