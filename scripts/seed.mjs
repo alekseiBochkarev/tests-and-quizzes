@@ -102,8 +102,9 @@ async function upsertQuestion(client, topic, question, index, topicId) {
        type = 'SINGLE_CHOICE',
        text = EXCLUDED.text,
        explanation = EXCLUDED.explanation,
-       status = 'PUBLISHED',
-       "isDemo" = true,
+       -- status и isDemo намеренно не перезаписываются: импорт реального
+       -- контента скрывает демо-вопросы (ARCHIVED), и повторный сид не должен
+       -- возвращать их в каталог.
        "contentHash" = EXCLUDED."contentHash",
        version = EXCLUDED.version,
        "updatedAt" = EXCLUDED."updatedAt"`,
