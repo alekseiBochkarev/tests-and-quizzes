@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/layout/SkipLink";
+import { CookieBanner } from "@/components/cookies/CookieBanner";
+import { authConfig } from "@/lib/auth/authConfig";
+import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from "@/lib/cookies/consent";
 import { TEXT_SIZE_COOKIE, parseTextSize } from "@/lib/textSize";
 
 import "./globals.css";
@@ -35,12 +38,17 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const textSize = parseTextSize(cookieStore.get(TEXT_SIZE_COOKIE)?.value);
+  const cookieConsent = parseCookieConsent(
+    cookieStore.get(COOKIE_CONSENT_COOKIE)?.value,
+    authConfig.legalCookiesVersion,
+  );
 
   return (
     <html lang="ru" data-text-size={textSize} className={golos.variable}>
       <body className="flex min-h-screen flex-col">
         <SkipLink />
         <SiteHeader textSize={textSize} />
+        <CookieBanner initialConsent={cookieConsent} />
         <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
           {children}
         </main>

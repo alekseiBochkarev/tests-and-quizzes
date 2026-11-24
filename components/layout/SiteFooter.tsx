@@ -13,6 +13,9 @@ export function SiteFooter() {
           <Link href="/legal/privacy" className={footerLinkClasses}>
             Политика конфиденциальности
           </Link>
+          <Link href="/legal/cookies" className={footerLinkClasses}>
+            Cookie-политика
+          </Link>
           <Link href="/legal/privacy#contact" className={footerLinkClasses}>
             Связаться с нами
           </Link>

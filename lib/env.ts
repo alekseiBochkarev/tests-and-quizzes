@@ -82,6 +82,7 @@ const envSchema = z
 
     LEGAL_TERMS_VERSION: z.string().min(1).default("2026-11-09-draft"),
     LEGAL_PRIVACY_VERSION: z.string().min(1).default("2026-11-09-draft"),
+    LEGAL_COOKIES_VERSION: z.string().min(1).default("2026-11-24-draft"),
 
     MAIL_TRANSPORT: z.enum(MAIL_TRANSPORTS).default("log"),
     MAIL_FROM: z.string().min(1).default("Тесты и квизы <no-reply@localhost>"),

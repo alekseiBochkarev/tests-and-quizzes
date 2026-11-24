@@ -19,6 +19,7 @@ export const authConfig = {
   cookieSecure: env.APP_ENV === "production",
   legalTermsVersion: env.LEGAL_TERMS_VERSION,
   legalPrivacyVersion: env.LEGAL_PRIVACY_VERSION,
+  legalCookiesVersion: env.LEGAL_COOKIES_VERSION,
   mail: {
     transport: env.MAIL_TRANSPORT,
     from: env.MAIL_FROM,

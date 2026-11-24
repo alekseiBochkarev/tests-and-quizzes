@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Alert } from "@/components/ui/Alert";
 import { env } from "@/lib/env";
@@ -39,6 +40,16 @@ export default function PrivacyPage() {
           Обработка персональных данных выполняется с вашего согласия и для исполнения
           соглашения об использовании сайта — в соответствии с Федеральным законом № 152-ФЗ
           «О персональных данных».
+        </p>
+        <p>
+          Какие cookie мы используем, зачем они нужны и как их отключить, описано в{" "}
+          <Link
+            href="/legal/cookies"
+            className="font-semibold text-accent underline underline-offset-4"
+          >
+            Cookie-политике
+          </Link>
+          .
         </p>
 
         <h2 className="text-xl font-bold text-ink">4. Сколько храним</h2>
