@@ -2,7 +2,7 @@
 
 Сайт коротких тематических тестов для аудитории 45+/55+. Рабочее название продукта — **«Тесты»**; «Тесты и квизы» — только имя папки и репозитория.
 
-В репозитории — продуктовые документы и рабочая реализация Sprint 1–2: каркас Next.js, авторизация по email, каталог тем, интересы, тренировки на 10/15/20/30 вопросов, готовые выпуски на 10–12 вопросов, «Тест дня», серверная проверка ответов, прогресс по темам, повторение ошибок, «Мои результаты», dev-почтовый ящик и сквозные тесты.
+В репозитории — продуктовые документы и рабочая реализация Sprint 1–2: каркас Next.js, авторизация по email, каталог тем, интересы, тренировки на 10/15/20/30 вопросов, готовые выпуски на 10–12 вопросов, «Тест дня», серверная проверка ответов, прогресс по темам, повторение ошибок, «Мои результаты», служебная админка с ролями, dev-почтовый ящик и сквозные тесты.
 
 ## Документы
 
@@ -20,6 +20,7 @@
 | [`docs/tasks/04-content-import.md`](docs/tasks/04-content-import.md)           | CNT-01: импорт вопросов из `forms_writer`, дедуп по `contentHash`, черновики, скрытие демо-контента.                                                      |
 | [`docs/tasks/05-quiz-releases.md`](docs/tasks/05-quiz-releases.md)             | LRN-01: готовые выпуски `Quiz` на 10–12 вопросов, модели, постоянная ссылка, запуск, сид, миграция и откат.                                               |
 | [`docs/tasks/06-daily-test.md`](docs/tasks/06-daily-test.md)                   | LRN-02: «Тест дня» на 5–7 вопросов, одна попытка в день по Москве, бонус +30, серия, карточка на главной, API и откат.                                    |
+| [`docs/tasks/07-admin.md`](docs/tasks/07-admin.md)                             | CNT-03: админ-каркас `/admin`, роли `USER`/`EDITOR`/`ADMIN`, матрица доступа, CLI выдачи роли, тесты и откат.                                             |
 
 ## Кратко о продукте
 
@@ -47,7 +48,7 @@
 
 ## Статус
 
-**Sprint 1 «Фундамент»: реализован.** **Sprint 2 «Учебный контур»: реализован (12.11.2026).** **CNT-01 «Импорт из `forms_writer`»: реализован (23.11.2026).** **LRN-01 «Готовые выпуски»: реализован (23.11.2026).** **LRN-02 «Тест дня»: реализован (24.11.2026).** Локальные проверки — lint, typecheck, unit, build и e2e — зелёные.
+**Sprint 1 «Фундамент»: реализован.** **Sprint 2 «Учебный контур»: реализован (12.11.2026).** **CNT-01 «Импорт из `forms_writer`»: реализован (23.11.2026).** **LRN-01 «Готовые выпуски»: реализован (23.11.2026).** **LRN-02 «Тест дня»: реализован (24.11.2026).** **CNT-03 «Админ-каркас и роли»: реализован (24.11.2026).** Локальные проверки — lint, typecheck, unit, build и e2e — зелёные.
 
 Что уже работает:
 
@@ -61,6 +62,8 @@
 - тренировка `/attempts/[id]`: 10/15/20/30 вопросов, серверная проверка, объяснение после каждого ответа, без таймера;
 - готовые выпуски `/tests/[тема]/[выпуск]`: 10–12 вопросов, постоянная ссылка, запуск из темы, результат как обычная попытка;
 - «Тест дня»: 5–7 вопросов из разных тем, одна попытка в день по Москве, +30 баллов, карточка на главной;
+- админка `/admin`: роли `USER`/`EDITOR`/`ADMIN`, серверная проверка доступа, навигация и заглушки разделов; ссылка в шапке видна только сотрудникам;
+- выдача роли по email через CLI `npm run user:role`; публичного endpoint смены роли нет;
 - результат `/attempts/[id]/result`: счёт, процент, разбивка по темам, разбор ошибок, повторение;
 - прогресс: `QuestionProgress` (mastery 0–5, интервалы 1/3/7/16/35 дней), `TopicProgress`, `UserStats`, `DailyActivity`;
 - «Мои результаты»: баллы и уровень, освоенные вопросы, точность, серия дней, слабые темы, история;
@@ -69,7 +72,7 @@
 - dev-mailbox `/_dev/mailbox` (только при `APP_ENV != production`), `/api/health`, security-заголовки в `proxy.ts`;
 - unit-тесты прогресса и auth, Playwright e2e и axe, workflow GitHub Actions.
 
-Что дальше: админка и управление выпусками, гостевой режим и merge, награды и дипломы, удаление аккаунта и смена email.
+Что дальше: CRUD тем и вопросов с импортом в админке (CNT-04), гостевой режим и merge, награды и дипломы, удаление аккаунта и смена email.
 
 ## Быстрый старт (≤ 10 минут)
 
@@ -129,23 +132,24 @@ npm run dev
 
 ## Команды
 
-| Команда                                    | Что делает                                                     |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| `npm run dev`                              | Dev-сервер на `http://localhost:3000`.                         |
-| `npm run build` / `npm run start`          | Прод-сборка и запуск.                                          |
-| `npm run lint` / `npm run typecheck`       | ESLint 9 и `tsc --noEmit` (strict).                            |
-| `npm test` / `npm run test:watch`          | Unit-тесты Vitest.                                             |
-| `npm run test:e2e`                         | Playwright: chromium, сам поднимает сервер.                    |
-| `npm run db:up` / `npm run db:down`        | PostgreSQL в Docker.                                           |
-| `npm run db:generate`                      | Генерация Prisma Client в `lib/generated/prisma` (gitignored). |
-| `npm run db:migrate` / `npm run db:deploy` | Миграции Prisma для dev-БД.                                    |
+| Команда                                    | Что делает                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `npm run dev`                              | Dev-сервер на `http://localhost:3000`.                                  |
+| `npm run build` / `npm run start`          | Прод-сборка и запуск.                                                   |
+| `npm run lint` / `npm run typecheck`       | ESLint 9 и `tsc --noEmit` (strict).                                     |
+| `npm test` / `npm run test:watch`          | Unit-тесты Vitest.                                                      |
+| `npm run test:e2e`                         | Playwright: chromium, сам поднимает сервер.                             |
+| `npm run db:up` / `npm run db:down`        | PostgreSQL в Docker.                                                    |
+| `npm run db:generate`                      | Генерация Prisma Client в `lib/generated/prisma` (gitignored).          |
+| `npm run db:migrate` / `npm run db:deploy` | Миграции Prisma для dev-БД.                                             |
 | `npm run db:seed`                          | Идемпотентный демо-контент: 5 разделов, 14 тем, 122 вопроса, 4 выпуска. |
-| `npm run db:import`                        | Импорт вопросов из `forms_writer` (см. ниже).                  |
-| `npm run db:test:up`                       | Создать `quiz_test`, если её нет.                              |
-| `npm run db:test:deploy`                   | Применить миграции к `quiz_test`.                              |
-| `npm run db:test:reset`                    | Очистить и заново мигрировать **только** `quiz_test`.          |
-| `npm run db:studio`                        | Prisma Studio.                                                 |
-| `npm run format` / `npm run format:check`  | Prettier.                                                      |
+| `npm run db:import`                        | Импорт вопросов из `forms_writer` (см. ниже).                           |
+| `npm run db:test:up`                       | Создать `quiz_test`, если её нет.                                       |
+| `npm run db:test:deploy`                   | Применить миграции к `quiz_test`.                                       |
+| `npm run db:test:reset`                    | Очистить и заново мигрировать **только** `quiz_test`.                   |
+| `npm run db:studio`                        | Prisma Studio.                                                          |
+| `npm run user:role`                        | Выдать роль: `-- user@example.com EDITOR` или `ADMIN`.                  |
+| `npm run format` / `npm run format:check`  | Prettier.                                                               |
 
 ### Импорт контента
 
@@ -173,6 +177,25 @@ npm run db:import -- --file ./batch.json --strict
 
 Подробности и критерии приёмки — [`docs/tasks/04-content-import.md`](docs/tasks/04-content-import.md).
 
+### Админка и роли
+
+Служебный раздел `/admin` открыт только ролям `EDITOR` и `ADMIN`. Гость уходит на
+`/login?next=%2Fadmin`, обычный пользователь получает `404`. Редактор видит темы,
+вопросы, выпуски и импорт; администратор дополнительно — пользователей и
+аналитику.
+
+Роль выдаётся из терминала, без публичного HTTP-эндпоинта:
+
+```powershell
+npm run user:role -- user@example.com EDITOR
+npm run user:role -- user@example.com ADMIN
+npm run user:role -- user@example.com USER
+```
+
+Команда идемпотентна: повторный запуск с той же ролью ничего не ломает. При
+следующем запросе роль читается из БД, повторный вход не нужен. Подробности —
+[`docs/tasks/07-admin.md`](docs/tasks/07-admin.md).
+
 ### E2E локально
 
 Playwright поднимает сервер с `DATABASE_URL_TEST`, поэтому тестовую БД нужно мигрировать и засеять отдельно:
@@ -190,9 +213,10 @@ npm run test:e2e
 ## Структура
 
 ```
-app/                 # App Router: страницы, auth-роуты, /api/v1, /api/health, dev/mailbox
-components/          # layout, ui-кит под 55+, формы авторизации, каталог, плеер
-lib/auth/            # scrypt, токены, сессия, rate-limit, письма, currentUser
+app/                 # App Router: страницы, /admin, auth-роуты, /api/v1, /api/health, dev/mailbox
+components/          # layout, ui-кит под 55+, формы авторизации, каталог, плеер, админка
+lib/auth/            # scrypt, токены, сессия, rate-limit, письма, currentUser, роли, guard админки
+lib/admin/           # разделы админки и видимость навигации по роли
 lib/content/         # каталог, тема по slug и импорт из forms_writer
 lib/interests/       # интересы пользователя
 lib/attempts/        # создание попытки, ответ, завершение, прерывание, разбор
@@ -207,9 +231,10 @@ scripts/seed.mjs     # идемпотентный демо-контент
 scripts/seed/content # разделы и вопросы демо-набора
 scripts/import-questions.mjs # импорт вопросов из forms_writer
 scripts/import/      # маппинг тем forms_writer → каталог
-tests/unit/          # Vitest: auth, http, env, progress, импорт
-tests/e2e/           # Playwright: auth, guard, обучение, размер текста, axe
+tests/unit/          # Vitest: auth, http, env, progress, импорт, роли
+tests/e2e/           # Playwright: auth, guard, обучение, размер текста, админка, axe
 scripts/db-test.mjs  # управление quiz_test
+scripts/user-role.mjs # выдача роли по email для админки
 docker/init/         # создание quiz_test при первом старте контейнера
 proxy.ts             # security-заголовки, CSP, HSTS в production
 ```
@@ -218,14 +243,14 @@ proxy.ts             # security-заголовки, CSP, HSTS в production
 
 **Входит:** каталог разделов и тем, интересы, рекомендации, тренировки 10/15/20/30, серверная проверка ответов, результат и разбор, `QuestionProgress`/`TopicProgress`/`UserStats`/`DailyActivity`, «Мои результаты», повторение ошибок, прерывание и продолжение попытки, демо-контент в репозитории, unit/e2e/CI.
 
-**Сделано отдельными задачами после Sprint 2:** CNT-01 — импорт из `forms_writer` через CLI; LRN-01 — готовые выпуски `Quiz` на 10–12 вопросов; LRN-02 — «Тест дня».
+**Сделано отдельными задачами после Sprint 2:** CNT-01 — импорт из `forms_writer` через CLI; LRN-01 — готовые выпуски `Quiz` на 10–12 вопросов; LRN-02 — «Тест дня»; CNT-03 — админ-каркас `/admin` и роли.
 
-**Не входит:** админка и импорт из `forms_writer` через UI, гостевой режим и merge прогресса, награды и дипломы, удаление аккаунта и смена email, типы вопросов кроме `single_choice`, OAuth, реальный SMTP, платежи, публичные рейтинги, аналитика. Подробности — в [`docs/sprint-2-notes.md`](docs/sprint-2-notes.md).
+**Не входит:** CRUD тем и вопросов и импорт через интерфейс админки, гостевой режим и merge прогресса, награды и дипломы, удаление аккаунта и смена email, типы вопросов кроме `single_choice`, OAuth, реальный SMTP, платежи, публичные рейтинги, аналитика. Подробности — в [`docs/sprint-2-notes.md`](docs/sprint-2-notes.md).
 
 ## Тесты и CI
 
-- **Unit (Vitest 3):** пароли, токены, сессионная cookie, rate-limit, Origin/CSRF, `safeNext`, валидация env, mastery, интервалы, выбор вопросов, рекомендации, XP/уровень, серия, агрегаты тем.
-- **E2E (Playwright 1.65):** регистрация → dev-mailbox → verify → вход → `/account`, ошибки входа, защита `/account` и выход, размер текста, axe на `/`, `/login`, `/register`, `/tests`, `/tests/history`, гостевой каталог, интересы → тренировка на 10 вопросов → результат → «Мои результаты», готовый выпуск, «Тест дня» с повторным стартом и бонусом, прерывание и продолжение тренировки.
+- **Unit (Vitest 3):** пароли, токены, сессионная cookie, rate-limit, Origin/CSRF, `safeNext`, валидация env, mastery, интервалы, выбор вопросов, рекомендации, XP/уровень, серия, агрегаты тем, роли и видимость разделов админки.
+- **E2E (Playwright 1.65):** регистрация → dev-mailbox → verify → вход → `/account`, ошибки входа, защита `/account` и выход, размер текста, axe на `/`, `/login`, `/register`, `/tests`, `/tests/history`, гостевой каталог, интересы → тренировка на 10 вопросов → результат → «Мои результаты», готовый выпуск, «Тест дня» с повторным стартом и бонусом, прерывание и продолжение тренировки, доступ в `/admin` для гостя, пользователя, редактора и администратора.
 - **CI (`.github/workflows/ci.yml`):** `npm ci` → `db:generate` → lint → typecheck → unit → `db:deploy` → `db:seed` → build → e2e на сервисе `postgres:16` с БД `quiz_test`. Секреты не требуются.
 
 ## Фактические версии

@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+
 import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
@@ -60,6 +63,31 @@ export async function registerAndVerify(page: Page, prefix = "e2e"): Promise<str
   await expect(page.getByText("Почта подтверждена", { exact: false }).first()).toBeVisible();
 
   return email;
+}
+
+/**
+ * Меняет роль пользователя в тестовой БД через CLI.
+ * Защита от случайной записи в dev-БД: `quiz` запрещён.
+ */
+export function setUserRole(email: string, role: "USER" | "EDITOR" | "ADMIN"): void {
+  const testUrl = process.env.DATABASE_URL_TEST;
+  if (!testUrl) {
+    throw new Error("Для e2e нужен DATABASE_URL_TEST (см. .env.example).");
+  }
+
+  const databaseName = decodeURIComponent(new URL(testUrl).pathname.replace(/^\//, ""));
+  if (databaseName === "quiz") {
+    throw new Error("DATABASE_URL_TEST указывает на dev-БД quiz. e2e должны идти в quiz_test.");
+  }
+
+  execFileSync(
+    process.execPath,
+    [path.join(process.cwd(), "scripts", "user-role.mjs"), email, role],
+    {
+      env: { ...process.env, DATABASE_URL: testUrl },
+      stdio: "pipe",
+    },
+  );
 }
 
 /** Вход через форму. Ожидает успешный переход на /account. */
