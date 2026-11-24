@@ -121,6 +121,66 @@ test.describe("Учебный контур", () => {
     ).toBeVisible();
   });
 
+  test("тест дня: один набор в день, бонус и результат", async ({ page }) => {
+    const email = await registerAndVerify(page, "daily");
+    await login(page, email);
+    await expect(page).toHaveURL(/\/account$/);
+
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Тест дня", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Начать тест дня" }).click();
+    await expect(page).toHaveURL(/\/attempts\/[^/]+$/);
+
+    // Повторный старт в тот же день возвращает ту же попытку.
+    const second = await page.request.post("/api/v1/daily/start");
+    expect(second.ok()).toBe(true);
+    const secondPayload = (await second.json()) as {
+      data: { attemptId: string; questionCount: number; status: string };
+    };
+    expect(page.url()).toContain(secondPayload.data.attemptId);
+    expect(secondPayload.data.status).toBe("in_progress");
+
+    const questionCount = secondPayload.data.questionCount;
+    expect(questionCount).toBeGreaterThanOrEqual(5);
+    expect(questionCount).toBeLessThanOrEqual(7);
+
+    for (let index = 1; index <= questionCount; index += 1) {
+      await expect(page.getByText(`Вопрос ${index} из ${questionCount}`)).toBeVisible();
+      await answerCurrentQuestion(page);
+
+      if (index < questionCount) {
+        await page.getByRole("button", { name: "Следующий вопрос" }).click();
+      }
+    }
+
+    await page.getByRole("button", { name: "Показать результат" }).click();
+    await expect(page).toHaveURL(/\/attempts\/[^/]+\/result$/);
+    await expect(page.getByRole("heading", { name: "Тест дня завершён" })).toBeVisible();
+    await expect(page.getByText(/из \d+ вопросов верно/)).toBeVisible();
+    await expect(page.getByText(/Включая \+30 баллов за завершение теста дня/)).toBeVisible();
+
+    // После завершения повторный старт возвращает ту же завершённую попытку.
+    const third = await page.request.post("/api/v1/daily/start");
+    expect(third.ok()).toBe(true);
+    const thirdPayload = (await third.json()) as {
+      data: { attemptId: string; status: string };
+    };
+    expect(thirdPayload.data.status).toBe("completed");
+    expect(page.url()).toContain(thirdPayload.data.attemptId);
+
+    // Завершённый тест дня виден на главной и в истории.
+    await page.goto("/");
+    await expect(page.getByText(/Сегодняшний тест дня пройден/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Начать тест дня" })).toHaveCount(0);
+
+    await page.goto("/account");
+    await expect(
+      page
+        .getByRole("region", { name: "Последние тренировки" })
+        .getByRole("link", { name: "Тест дня" }),
+    ).toBeVisible();
+  });
+
   test("тренировку можно прервать: ответы и прогресс сохраняются", async ({ page }) => {
     const email = await registerAndVerify(page, "resume");
     await login(page, email);

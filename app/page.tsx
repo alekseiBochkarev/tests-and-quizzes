@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ReviewButton } from "@/components/attempts/ReviewButton";
+import { DailyTestCard } from "@/components/daily/DailyTestCard";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -89,7 +90,7 @@ export default async function HomePage() {
   if (!user) return <GuestHome />;
 
   const data = await getHomeData(user.id);
-  const { overview, continueCard, recommendations } = data;
+  const { overview, continueCard, recommendations, daily } = data;
   const numberFormat = new Intl.NumberFormat("ru-RU");
   const levelSpan = Math.max(1, overview.level.nextLevelXp - overview.level.currentLevelXp);
   const levelPercent = Math.min(
@@ -140,6 +141,13 @@ export default async function HomePage() {
             </div>
           </dl>
         </Card>
+      </section>
+
+      <section aria-labelledby="daily-title" className="space-y-4">
+        <h2 id="daily-title" className="text-2xl font-bold">
+          Тест дня
+        </h2>
+        <DailyTestCard daily={daily} />
       </section>
 
       {continueCard ? (

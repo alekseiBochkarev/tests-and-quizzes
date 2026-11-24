@@ -71,7 +71,10 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
 
   const question = questions[currentIndex];
   const total = questions.length;
-  const title = attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка";
+  const title =
+    attempt.mode === "DAILY"
+      ? "Тест дня"
+      : attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка";
   const isLast = currentIndex >= total - 1;
   const resumed = attempt.answeredCount > 0;
 

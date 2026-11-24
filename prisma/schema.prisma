@@ -50,6 +50,7 @@ enum QuestionType {
 enum AttemptMode {
   TRAINING
   REVIEW
+  DAILY
 }
 
 enum AttemptStatus {
@@ -282,6 +283,8 @@ model Attempt {
   topicId       String?
   quizId        String?
   mode          AttemptMode   @default(TRAINING)
+  // Дата «Теста дня» по Москве. NULL у обычных тренировок и повторений.
+  dailyDate     DateTime?     @db.Date
   status        AttemptStatus @default(IN_PROGRESS)
   questionCount Int
   answeredCount Int           @default(0)
@@ -300,6 +303,7 @@ model Attempt {
 
   answers AttemptAnswer[]
 
+  @@unique([userId, dailyDate])
   @@index([userId, startedAt])
   @@index([status])
   @@index([topicId])

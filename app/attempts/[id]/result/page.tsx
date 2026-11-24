@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getAttemptResult } from "@/lib/attempts/service";
+import { DAILY_BONUS_XP } from "@/lib/daily/rules";
 import { questionWord } from "@/lib/ui/text";
 
 export const dynamic = "force-dynamic";
@@ -34,18 +35,30 @@ export default async function AttemptResultPage({ params }: PageProps) {
     redirect(`/attempts/${id}`);
   }
 
-  const title = result.quizTitle ?? result.topicTitle ?? result.categoryTitle ?? "Тренировка";
-  const label = result.quizTitle ? `Выпуск «${result.quizTitle}»` : title;
+  const isDaily = result.mode === "DAILY";
+  const title = isDaily
+    ? "Тест дня"
+    : result.quizTitle ?? result.topicTitle ?? result.categoryTitle ?? "Тренировка";
+  const label = isDaily
+    ? "Тест дня"
+    : result.quizTitle
+      ? `Выпуск «${result.quizTitle}»`
+      : title;
   const answeredAll = result.answeredCount >= result.questionCount;
   const abandoned = result.status === "ABANDONED";
+  const heading = abandoned
+    ? isDaily
+      ? "Тест дня прерван"
+      : "Тренировка прервана"
+    : isDaily
+      ? "Тест дня завершён"
+      : "Тренировка завершена";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="space-y-3">
         <p className="text-base font-semibold tracking-wide text-accent uppercase">{label}</p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          {abandoned ? "Тренировка прервана" : "Тренировка завершена"}
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{heading}</h1>
         {abandoned ? (
           <p className="text-lg text-ink-soft">
             Ответы, которые вы успели дать, сохранены. Баллы за них остались.
@@ -78,6 +91,12 @@ export default async function AttemptResultPage({ params }: PageProps) {
             <dd className="text-lg font-semibold">{result.mistakes.length}</dd>
           </div>
         </dl>
+
+        {isDaily && !abandoned ? (
+          <p className="text-base text-ink-soft">
+            Включая +{DAILY_BONUS_XP} баллов за завершение теста дня.
+          </p>
+        ) : null}
 
         {!answeredAll && !abandoned ? (
           <Alert variant="neutral" title="Не на все вопросы дан ответ">

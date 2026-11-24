@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { AttemptStatus, ContentStatus } from "@/lib/generated/prisma/enums";
+import { AttemptMode, AttemptStatus, ContentStatus } from "@/lib/generated/prisma/enums";
+import { getDailyStatus, type DailyStatusInfo } from "@/lib/daily/service";
 import { levelProgress, type LevelProgress } from "@/lib/progress/level";
 import { recommendTopics, type TopicRecommendation } from "@/lib/progress/recommendations";
 import { accuracyPercent } from "@/lib/progress/stats";
@@ -73,10 +74,22 @@ export type HomeData = {
   overview: UserOverview;
   continueCard: ContinueCard | null;
   recommendations: TopicRecommendationCard[];
+  daily: DailyStatusInfo;
 };
 
 function accuracy(correct: number, answered: number): number {
   return Math.round(accuracyPercent(correct, answered));
+}
+
+/** Понятное название попытки для «Продолжить» и истории. */
+function attemptTitle(attempt: {
+  mode: string;
+  quiz: { title: string } | null;
+  topic: { title: string } | null;
+  category: { title: string } | null;
+}): string {
+  if (attempt.mode === AttemptMode.DAILY) return "Тест дня";
+  return attempt.quiz?.title ?? attempt.topic?.title ?? attempt.category?.title ?? "Тренировка";
 }
 
 async function loadOverview(userId: string): Promise<UserOverview> {
@@ -199,6 +212,8 @@ async function loadContinueCard(userId: string): Promise<ContinueCard | null> {
       userId,
       status: AttemptStatus.IN_PROGRESS,
       answeredCount: { gt: 0 },
+      // «Тест дня» показывает отдельная карточка, чтобы не дублировать блок.
+      mode: { not: AttemptMode.DAILY },
     },
     orderBy: { startedAt: "desc" },
     include: {
@@ -209,15 +224,10 @@ async function loadContinueCard(userId: string): Promise<ContinueCard | null> {
   });
 
   if (activeAttempt) {
-    const title =
-      activeAttempt.quiz?.title ??
-      activeAttempt.topic?.title ??
-      activeAttempt.category?.title ??
-      "Тренировка";
     return {
       kind: "attempt",
       href: `/attempts/${activeAttempt.id}`,
-      title,
+      title: attemptTitle(activeAttempt),
       subtitle: `${activeAttempt.answeredCount} из ${activeAttempt.questionCount} вопросов`,
     };
   }
@@ -245,13 +255,14 @@ async function loadContinueCard(userId: string): Promise<ContinueCard | null> {
 
 export async function getHomeData(userId: string): Promise<HomeData> {
   const now = new Date();
-  const [overview, continueCard, recommendations] = await Promise.all([
+  const [overview, continueCard, recommendations, daily] = await Promise.all([
     loadOverview(userId),
     loadContinueCard(userId),
     loadRecommendations(userId, now),
+    getDailyStatus(userId, now),
   ]);
 
-  return { overview, continueCard, recommendations };
+  return { overview, continueCard, recommendations, daily };
 }
 
 export type AccountData = {
@@ -321,7 +332,7 @@ export async function getAccountData(userId: string): Promise<AccountData> {
 
   const history: AttemptHistoryItem[] = historyRows.map((attempt) => ({
     id: attempt.id,
-    title: attempt.quiz?.title ?? attempt.topic?.title ?? attempt.category?.title ?? "Тренировка",
+    title: attemptTitle(attempt),
     finishedAt: attempt.finishedAt,
     correctCount: attempt.correctCount,
     questionCount: attempt.questionCount,

@@ -6,6 +6,7 @@ import { nextQuestionProgress } from "@/lib/progress/mastery";
 import { levelForXp } from "@/lib/progress/level";
 import { selectQuestions, type QuestionCandidate } from "@/lib/progress/scoring";
 import { lookupPlayableQuiz } from "@/lib/quizzes/service";
+import { DAILY_BONUS_XP } from "@/lib/daily/rules";
 import {
   computeTopicAggregate,
   nextDailyStreak,
@@ -102,6 +103,71 @@ async function loadCandidates(
   });
 
   return { candidates, topicIds };
+}
+
+export type CreateAttemptRecordInput = {
+  userId: string;
+  timezone: string;
+  mode: AttemptModeType;
+  /** Вопросы в нужном порядке; они уже проверены на публикацию. */
+  questionIds: string[];
+  categoryId?: string | null;
+  topicId?: string | null;
+  quizId?: string | null;
+  dailyDate?: Date | null;
+};
+
+/**
+ * Создаёт попытку со снимком вопросов и увеличивает счётчик начатых попыток.
+ * Общий путь для тренировок, выпусков и «Теста дня».
+ */
+export async function createAttemptRecord(
+  input: CreateAttemptRecordInput,
+): Promise<{ id: string; questionCount: number }> {
+  const questionCount = input.questionIds.length;
+
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.attempt.create({
+      data: {
+        userId: input.userId,
+        categoryId: input.categoryId ?? null,
+        topicId: input.topicId ?? null,
+        quizId: input.quizId ?? null,
+        mode: input.mode,
+        dailyDate: input.dailyDate ?? null,
+        status: AttemptStatus.IN_PROGRESS,
+        questionCount,
+        maxScore: questionCount,
+      },
+    });
+
+    const versions = await tx.question.findMany({
+      where: { id: { in: input.questionIds } },
+      select: { id: true, version: true },
+    });
+    const versionById = new Map(versions.map((row) => [row.id, row.version]));
+
+    await tx.attemptAnswer.createMany({
+      data: input.questionIds.map((questionId, index) => ({
+        attemptId: created.id,
+        questionId,
+        order: index,
+        questionVersion: versionById.get(questionId) ?? 1,
+      })),
+    });
+
+    await tx.userStats.upsert({
+      where: { userId: input.userId },
+      create: {
+        userId: input.userId,
+        totalAttempts: 1,
+        timezone: input.timezone,
+      },
+      update: { totalAttempts: { increment: 1 } },
+    });
+
+    return { id: created.id, questionCount };
+  });
 }
 
 export async function createAttempt(
@@ -259,45 +325,17 @@ export async function createAttempt(
 
   const questionCount = selected.length;
 
-  const attempt = await prisma.$transaction(async (tx) => {
-    const created = await tx.attempt.create({
-      data: {
-        userId,
-        categoryId,
-        topicId,
-        quizId,
-        mode: input.mode,
-        status: AttemptStatus.IN_PROGRESS,
-        questionCount,
-        maxScore: questionCount,
-      },
-    });
-
-    const versions = await tx.question.findMany({
-      where: { id: { in: selected.map((item) => item.questionId) } },
-      select: { id: true, version: true },
-    });
-    const versionById = new Map(versions.map((row) => [row.id, row.version]));
-
-    await tx.attemptAnswer.createMany({
-      data: selected.map((item, index) => ({
-        attemptId: created.id,
-        questionId: item.questionId,
-        order: index,
-        questionVersion: versionById.get(item.questionId) ?? 1,
-      })),
-    });
-
-    await tx.userStats.upsert({
-      where: { userId },
-      create: { userId, totalAttempts: 1, timezone: user.timezone },
-      update: { totalAttempts: { increment: 1 } },
-    });
-
-    return created;
+  const attempt = await createAttemptRecord({
+    userId,
+    timezone: user.timezone,
+    mode: input.mode,
+    questionIds: selected.map((item) => item.questionId),
+    categoryId,
+    topicId,
+    quizId,
   });
 
-  return { attemptId: attempt.id, questionCount, mode: attempt.mode };
+  return { attemptId: attempt.id, questionCount, mode: input.mode };
 }
 
 export type AttemptQuestionPayload = {
@@ -808,7 +846,9 @@ export async function finishAttempt(
 
     const now = new Date();
     const isPerfect = attempt.correctCount === attempt.questionCount;
-    const completionXp = xpForCompletion(isPerfect);
+    const completionXp =
+      xpForCompletion(isPerfect) +
+      (attempt.mode === AttemptMode.DAILY ? DAILY_BONUS_XP : 0);
 
     await tx.attempt.update({
       where: { id: attempt.id },
@@ -947,5 +987,9 @@ export async function countDueQuestions(userId: string, topicId?: string): Promi
 }
 
 export function isAttemptMode(value: unknown): value is AttemptModeType {
-  return value === AttemptMode.TRAINING || value === AttemptMode.REVIEW;
+  return (
+    value === AttemptMode.TRAINING ||
+    value === AttemptMode.REVIEW ||
+    value === AttemptMode.DAILY
+  );
 }
