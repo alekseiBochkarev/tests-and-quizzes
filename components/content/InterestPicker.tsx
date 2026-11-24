@@ -57,12 +57,34 @@ export function InterestPicker({
       }
 
       setSaved(true);
-      router.refresh();
+
+      // После онбординга сервер перестаёт показывать форму, поэтому
+      // подтверждение нельзя оставлять внутри неё: `router.refresh()`
+      // размонтирует блок раньше, чем пользователь увидит «Сохранено».
+      // В режиме редактирования форма остаётся на месте — обновляем данные.
+      if (mode === "edit") router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Не удалось сохранить выбор.");
     } finally {
       setSaving(false);
     }
+  }
+
+  if (mode === "onboarding" && saved) {
+    return (
+      <Card className="space-y-4">
+        <Alert variant="success" title="Сохранено">
+          Рекомендации на главной обновятся с учётом выбора. Изменить выбор можно в разделе
+          «Интересы».
+        </Alert>
+        <div className="flex flex-wrap gap-3">
+          <Button href="/tests">Перейти к темам</Button>
+          <Button href="/interests" variant="secondary">
+            Изменить интересы
+          </Button>
+        </div>
+      </Card>
+    );
   }
 
   return (
