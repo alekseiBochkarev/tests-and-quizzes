@@ -35,6 +35,8 @@ enum ConsentType {
   TERMS
   PRIVACY
   MARKETING
+  COOKIE_ANALYTICS
+  COOKIE_MARKETING
 }
 
 enum ContentStatus {

@@ -182,6 +182,19 @@ export function checkAdminImportRateLimit(userId: string | null): RateLimitResul
 }
 
 /**
+ * Сохранение настроек cookie. Бакет по пользователю и по IP (если прокси
+ * доверенный): защищает журнал согласий от случайного цикла в интерфейсе.
+ */
+export function checkCookieConsentRateLimit(
+  userId: string | null,
+  ip: string | null,
+): RateLimitResult {
+  const byUser = userId ? check(`cookie-consent:user:${userId}`, 60, HOUR_MS) : ALLOWED;
+  const byIp = ip ? check(`cookie-consent:ip:${ip}`, 60, HOUR_MS) : ALLOWED;
+  return worst(byUser, byIp);
+}
+
+/**
  * IP клиента. Заголовкам прокси верим только при явном `TRUST_PROXY=true`;
  * иначе возвращаем null, и IP-бакет не действует. Флаг передаётся
  * параметром, чтобы тесты не зависели от `process.env`.

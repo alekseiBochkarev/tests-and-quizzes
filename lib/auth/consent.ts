@@ -4,10 +4,13 @@ import type { ConsentType } from "@/lib/generated/prisma/enums";
 export const CONSENT_TERMS: ConsentType = "TERMS";
 export const CONSENT_PRIVACY: ConsentType = "PRIVACY";
 export const CONSENT_MARKETING: ConsentType = "MARKETING";
+export const CONSENT_COOKIE_ANALYTICS: ConsentType = "COOKIE_ANALYTICS";
+export const CONSENT_COOKIE_MARKETING: ConsentType = "COOKIE_MARKETING";
 
 export const consentVersions = {
   terms: authConfig.legalTermsVersion,
   privacy: authConfig.legalPrivacyVersion,
+  cookies: authConfig.legalCookiesVersion,
 } as const;
 
 export type ConsentRecordInput = {
@@ -31,8 +34,7 @@ export function buildConsentRecords(params: {
   marketingOptIn: boolean;
   ip: string | null;
   userAgent: string | null;
-}): ConsentRecordInput[] {
-  const records: ConsentRecordInput[] = [
+}): ConsentRecordInput[] {  const records: ConsentRecordInput[] = [
     {
       type: CONSENT_TERMS,
       version: consentVersions.terms,
@@ -57,4 +59,35 @@ export function buildConsentRecords(params: {
   ];
 
   return records;
+}
+
+/**
+ * Аудит cookie-согласия (ACC-03).
+ *
+ * Пишем обе категории при каждом изменении: и включение, и отказ. Так видно
+ * не только текущее решение, но и историю — этого требует 152-ФЗ. Записи
+ * создаются только для вошедшего пользователя; выбор гостя живёт в cookie.
+ */
+export function buildCookieConsentRecords(params: {
+  analytics: boolean;
+  marketing: boolean;
+  ip: string | null;
+  userAgent: string | null;
+}): ConsentRecordInput[] {
+  return [
+    {
+      type: CONSENT_COOKIE_ANALYTICS,
+      version: consentVersions.cookies,
+      accepted: params.analytics,
+      ip: params.ip,
+      userAgent: params.userAgent,
+    },
+    {
+      type: CONSENT_COOKIE_MARKETING,
+      version: consentVersions.cookies,
+      accepted: params.marketing,
+      ip: params.ip,
+      userAgent: params.userAgent,
+    },
+  ];
 }
