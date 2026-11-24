@@ -20,7 +20,10 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-8">
       <Alert variant="neutral" title="Что уже работает">
-        Вход по ролям, навигация и заглушки разделов. Управление контентом появится в задаче CNT-04.
+        Вход по ролям. В разделе «Темы и вопросы» можно создавать и редактировать темы и вопросы,
+        публиковать их и убирать в архив. В разделе «Импорт» — загружать JSON из forms_writer с
+        предпросмотром. Управление выпусками, пользователями и аналитикой появится отдельными
+        задачами.
       </Alert>
 
       <section aria-labelledby="admin-sections" className="space-y-4">

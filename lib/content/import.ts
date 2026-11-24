@@ -47,7 +47,8 @@ export type ImportIssueCode =
   | "duplicate_hash"
   | "possible_duplicate_text"
   | "topic_category_mismatch"
-  | "unknown_category";
+  | "unknown_category"
+  | "target_topic_ignored";
 
 export type ImportIssue = {
   /** Номер вопроса в файле, 1-based. Для ошибок файла/маппинга — null. */
