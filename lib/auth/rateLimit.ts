@@ -167,6 +167,21 @@ export function checkAttemptAnswerRateLimit(userId: string | null): RateLimitRes
 }
 
 /**
+ * Защита контентных мутаций админки (CNT-04). Редактор работает вручную,
+ * поэтому лимит щедрый: он страхует от зацикленной формы, а не от человека.
+ */
+export function checkAdminContentRateLimit(userId: string | null): RateLimitResult {
+  if (!userId) return ALLOWED;
+  return check(`admin:content:user:${userId}`, 240, HOUR_MS);
+}
+
+/** Импорт тяжелее обычной правки: отдельный, более строгий бакет. */
+export function checkAdminImportRateLimit(userId: string | null): RateLimitResult {
+  if (!userId) return ALLOWED;
+  return check(`admin:import:user:${userId}`, 60, HOUR_MS);
+}
+
+/**
  * IP клиента. Заголовкам прокси верим только при явном `TRUST_PROXY=true`;
  * иначе возвращаем null, и IP-бакет не действует. Флаг передаётся
  * параметром, чтобы тесты не зависели от `process.env`.

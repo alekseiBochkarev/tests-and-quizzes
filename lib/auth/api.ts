@@ -37,9 +37,23 @@ export type JsonBodyResult =
   | { ok: true; body: Record<string, unknown> }
   | { ok: false; response: Response };
 
-export async function readJsonBody(request: Request, requestId: string): Promise<JsonBodyResult> {
+export type ReadJsonOptions = {
+  /**
+   * Лимит тела запроса. По умолчанию 32 КБ; импорт контента передаёт 1 МБ,
+   * потому что файл форм_writer содержит до 500 вопросов.
+   */
+  maxBytes?: number;
+};
+
+export async function readJsonBody(
+  request: Request,
+  requestId: string,
+  options: ReadJsonOptions = {},
+): Promise<JsonBodyResult> {
+  const maxBytes = options.maxBytes ?? MAX_BODY_BYTES;
+
   const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     return {
       ok: false,
       response: fail("payload_too_large", "Слишком большой запрос.", {
@@ -62,7 +76,7 @@ export async function readJsonBody(request: Request, requestId: string): Promise
     };
   }
 
-  if (text.length > MAX_BODY_BYTES) {
+  if (new TextEncoder().encode(text).byteLength > maxBytes) {
     return {
       ok: false,
       response: fail("payload_too_large", "Слишком большой запрос.", {
