@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TextSizeSwitch } from "@/components/ui/TextSizeSwitch";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import { isStaffRole } from "@/lib/auth/roles";
 import type { TextSize } from "@/lib/textSize";
 
 const navLinkClasses =
@@ -21,7 +22,10 @@ export async function SiteHeader({ textSize }: { textSize: TextSize }) {
           Тесты
         </Link>
 
-        <nav aria-label="Основная навигация" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <nav
+          aria-label="Основная навигация"
+          className="flex flex-wrap items-center gap-x-4 gap-y-2"
+        >
           <Link href="/tests" className={navLinkClasses}>
             Тесты
           </Link>
@@ -33,6 +37,11 @@ export async function SiteHeader({ textSize }: { textSize: TextSize }) {
           <Link href="/account" className={navLinkClasses}>
             Мои результаты
           </Link>
+          {user && isStaffRole(user.role) ? (
+            <Link href="/admin" className={navLinkClasses}>
+              Админка
+            </Link>
+          ) : null}
           <TextSizeSwitch current={textSize} />
 
           {user ? (
