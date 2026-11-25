@@ -61,5 +61,7 @@ async function loadSharedAttempt(attemptId: string): Promise<SharedAttempt | nul
   };
 }
 
-/** `cache` склеивает вызовы из generateMetadata и страницы в один запрос. */
+/** `cache` склеивает вызовы из generateMetadata и страницы в один запрос.
+ *  Вне React-рендера (например, в route-обработчике OG-картинки) `cache`
+ *  просто вызывает функцию — это ожидаемо и безопасно. */
 export const getSharedAttempt = cache(loadSharedAttempt);

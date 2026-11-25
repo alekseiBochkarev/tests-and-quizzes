@@ -64,6 +64,9 @@ export function shareMessage({ title, percent, correctCount, questionCount }: Sh
 /** Обрезает длинное название для карточки, сохраняя читаемость. */
 export function clampText(text: string, maxLength: number): string {
   const clean = text.trim();
-  if (clean.length <= maxLength) return clean;
-  return `${clean.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+  // Array.from режет по code points, а не по UTF-16: иначе суррогатная пара
+  // (эмодзи в названии выпуска) могла разорваться пополам.
+  const chars = Array.from(clean);
+  if (chars.length <= maxLength) return clean;
+  return `${chars.slice(0, Math.max(0, maxLength - 1)).join("").trimEnd()}…`;
 }

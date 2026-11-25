@@ -17,14 +17,18 @@ import { verifyShareToken } from "@/lib/share/token";
  * завершённую попытку. На странице только итог — название теста, процент,
  * число верных ответов и дата. Почта, имя и ответы не показываются.
  *
- * Индексировать такие страницы нельзя: `noindex` и в metadata, и в robots
- * наследуется от корневого layout.
+ * Дата считается по Москве: это то же правило, что у «Теста дня», и оно не
+ * зависит от часового пояса сервера. `noindex, nofollow` задаётся здесь и на
+ * 404. Sitemap пока нет; когда появится, `/share/*` в него включать не нужно.
  */
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = { params: Promise<{ id: string; token: string }> };
+
+/** Один и тот же origin для всех вызовов generateMetadata. */
+const METADATA_BASE = new URL(env.APP_URL);
 
 async function loadShared(params: PageProps["params"]) {
   const { id, token } = await params;
@@ -34,12 +38,17 @@ async function loadShared(params: PageProps["params"]) {
 
 function formatDate(value: Date | null): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" }).format(value);
+  // Москва, а не зона сервера: иначе в UTC дата «съезжает» на день назад
+  // для вечерних попыток. То же правило используют «Тест дня» и экспорт CSV.
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "long",
+    timeZone: "Europe/Moscow",
+  }).format(value);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const base: Metadata = {
-    metadataBase: new URL(env.APP_URL),
+    metadataBase: METADATA_BASE,
     robots: { index: false, follow: false },
   };
 

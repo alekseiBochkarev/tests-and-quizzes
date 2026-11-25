@@ -28,6 +28,8 @@ type ShareResultProps = {
 type Network = {
   id: string;
   label: string;
+  /** Подпись для скринридера: «Поделиться в ОК», «Поделиться во ВКонтакте». */
+  shareLabel: string;
   href: (url: string, text: string) => string;
 };
 
@@ -35,23 +37,27 @@ const NETWORKS: readonly Network[] = [
   {
     id: "telegram",
     label: "Telegram",
+    shareLabel: "Поделиться в Telegram",
     href: (url, text) =>
       `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
   },
   {
     id: "whatsapp",
     label: "WhatsApp",
+    shareLabel: "Поделиться в WhatsApp",
     href: (url, text) => `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`,
   },
   {
     id: "ok",
     label: "Одноклассники",
+    shareLabel: "Поделиться в ОК",
     href: (url, text) =>
       `https://connect.ok.ru/offer?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
   },
   {
     id: "vk",
     label: "ВКонтакте",
+    shareLabel: "Поделиться во ВКонтакте",
     href: (url, text) =>
       `https://vk.com/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`,
   },
@@ -67,7 +73,9 @@ function hasNativeShare(): boolean {
 
 export function ShareResult({ url, title, text }: ShareResultProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [status, setStatus] = useState("");
+  // kind разделяет «получилось» и «подсказку/ошибку»: для аудитории 55+
+  // зелёный цвет — сильный сигнал успеха, его нельзя показывать на ошибку.
+  const [status, setStatus] = useState<{ kind: "ok" | "info"; text: string } | null>(null);
 
   // navigator.share есть не везде. useSyncExternalStore даёт серверный
   // снимок `false`, поэтому гидратация не расходится, а после неё
@@ -77,18 +85,22 @@ export function ShareResult({ url, title, text }: ShareResultProps) {
   async function nativeShare() {
     try {
       await navigator.share({ title, text, url });
-      setStatus("Спасибо! Ссылка отправлена.");
+      setStatus({ kind: "ok", text: "Спасибо! Ссылка отправлена." });
     } catch (cause) {
-      // Отмена окна — не ошибка: человек передумал.
-      if (cause instanceof DOMException && cause.name === "AbortError") return;
-      setStatus("Не удалось открыть окно «Поделиться». Скопируйте ссылку ниже.");
+      // Отмена окна — не ошибка: человек передумал. В разных браузерах
+      // отмена приходит как AbortError и у DOMException, и у обычного Error.
+      if (cause instanceof Error && cause.name === "AbortError") return;
+      setStatus({
+        kind: "info",
+        text: "Окно «Поделиться» не открылось. Скопируйте ссылку ниже.",
+      });
     }
   }
 
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(url);
-      setStatus("Ссылка скопирована. Вставьте её в сообщение или письмо.");
+      setStatus({ kind: "ok", text: "Ссылка скопирована. Вставьте её в сообщение или письмо." });
       return;
     } catch {
       // Браузер может запретить буфер обмена — тогда выделяем ссылку.
@@ -96,7 +108,7 @@ export function ShareResult({ url, title, text }: ShareResultProps) {
 
     const input = inputRef.current;
     if (!input) {
-      setStatus("Выделите ссылку и скопируйте её вручную.");
+      setStatus({ kind: "info", text: "Выделите ссылку и скопируйте её вручную." });
       return;
     }
 
@@ -112,8 +124,13 @@ export function ShareResult({ url, title, text }: ShareResultProps) {
 
     setStatus(
       copied
-        ? "Ссылка скопирована. Вставьте её в сообщение или письмо."
-        : "Ссылка выделена. Скопируйте её сочетанием клавиш Ctrl+C.",
+        ? { kind: "ok", text: "Ссылка скопирована. Вставьте её в сообщение или письмо." }
+        : {
+            kind: "info",
+            text:
+              "Ссылка выделена. Нажмите на неё и удерживайте, затем выберите «Копировать». " +
+              "На компьютере можно нажать Ctrl+C.",
+          },
     );
   }
 
@@ -160,8 +177,14 @@ export function ShareResult({ url, title, text }: ShareResultProps) {
         />
       </div>
 
-      <p role="status" aria-live="polite" className="min-h-6 text-base text-success">
-        {status}
+      <p
+        role="status"
+        className={cn(
+          "min-h-6 text-base",
+          status?.kind === "ok" ? "text-success" : "text-ink-soft",
+        )}
+      >
+        {status?.text ?? ""}
       </p>
 
       <div className="space-y-2">
@@ -174,7 +197,7 @@ export function ShareResult({ url, title, text }: ShareResultProps) {
                 href={network.href(url, text)}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Поделиться в ${network.label}`}
+                aria-label={network.shareLabel}
               >
                 {network.label}
               </a>

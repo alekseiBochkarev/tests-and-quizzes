@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
@@ -118,11 +120,26 @@ test.describe("Поделиться результатом", () => {
     await page.getByRole("button", { name: "Начать: 10 вопросов" }).click();
     await expect(page).toHaveURL(/\/attempts\/[^/]+$/);
 
+    const abandonedId = new URL(page.url()).pathname.split("/").filter(Boolean).pop() ?? "";
+    expect(abandonedId).not.toBe("");
+
     await answerCurrentQuestion(page);
     await page.getByRole("button", { name: "Выйти из тренировки" }).click();
     await page.getByRole("button", { name: "Прервать и выйти" }).click();
 
     await expect(page.getByRole("heading", { name: "Тренировка прервана" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Поделиться результатом" })).toHaveCount(0);
+
+    // Даже с валидным токеном прерванная попытка не должна открываться:
+    // сервис отдаёт только COMPLETED.
+    const secret = process.env.AUTH_SECRET ?? "";
+    expect(secret).not.toBe("");
+    const token = createHmac("sha256", secret)
+      .update(`share:attempt:${abandonedId}`)
+      .digest("base64url")
+      .slice(0, 32);
+
+    const response = await page.request.get(`/share/${abandonedId}/${token}`);
+    expect(response.status()).toBe(404);
   });
 });
