@@ -97,6 +97,26 @@ model User {
   topicProgress    TopicProgress[]
   stats            UserStats?
   dailyActivity    DailyActivity[]
+  auditLogs        AuditLog[]
+}
+
+// --- Аудит юридически значимых действий ---
+// Введён в ACC-01 для удаления аккаунта. CNT-05 расширит его событиями
+// редакционного workflow. Персональные данные сюда не пишем: только действие,
+// субъект и время.
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  entityType  String?
+  entityId    String?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
 }
 
 model AuthIdentity {

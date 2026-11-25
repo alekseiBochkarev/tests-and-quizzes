@@ -195,6 +195,15 @@ export function checkCookieConsentRateLimit(
 }
 
 /**
+ * Удаление аккаунта — редкое действие. Лимит защищает от случайного цикла
+ * в форме и от подбора пароля через уже открытую сессию.
+ */
+export function checkAccountDeletionRateLimit(userId: string | null): RateLimitResult {
+  if (!userId) return ALLOWED;
+  return check(`account:delete:user:${userId}`, 5, HOUR_MS);
+}
+
+/**
  * IP клиента. Заголовкам прокси верим только при явном `TRUST_PROXY=true`;
  * иначе возвращаем null, и IP-бакет не действует. Флаг передаётся
  * параметром, чтобы тесты не зависели от `process.env`.

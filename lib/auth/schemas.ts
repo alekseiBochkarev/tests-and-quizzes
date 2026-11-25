@@ -56,6 +56,16 @@ export const changePasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
+/** ACC-01: подтверждение удаления аккаунта. Слово проверяется отдельно. */
+export const deleteAccountSchema = z.object({
+  password: z.string({ message: "Введите пароль." }).min(1, "Введите пароль.").max(1024),
+  confirmation: z
+    .string({ message: "Введите слово УДАЛИТЬ." })
+    .trim()
+    .min(1, "Введите слово УДАЛИТЬ.")
+    .max(32),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
