@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { ReviewButton } from "@/components/attempts/ReviewButton";
+import { ShareResult } from "@/components/attempts/ShareResult";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { attemptKindLabel, attemptTitle } from "@/lib/attempts/display";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getAttemptResult } from "@/lib/attempts/service";
 import { DAILY_BONUS_XP } from "@/lib/daily/rules";
+import { env } from "@/lib/env";
+import { shareMessage } from "@/lib/share/text";
+import { createShareToken, shareUrl } from "@/lib/share/token";
 import { questionWord } from "@/lib/ui/text";
 
 export const dynamic = "force-dynamic";
@@ -36,14 +41,8 @@ export default async function AttemptResultPage({ params }: PageProps) {
   }
 
   const isDaily = result.mode === "DAILY";
-  const title = isDaily
-    ? "Тест дня"
-    : result.quizTitle ?? result.topicTitle ?? result.categoryTitle ?? "Тренировка";
-  const label = isDaily
-    ? "Тест дня"
-    : result.quizTitle
-      ? `Выпуск «${result.quizTitle}»`
-      : title;
+  const title = attemptTitle(result);
+  const label = attemptKindLabel(result);
   const answeredAll = result.answeredCount >= result.questionCount;
   const abandoned = result.status === "ABANDONED";
   const heading = abandoned
@@ -53,6 +52,21 @@ export default async function AttemptResultPage({ params }: PageProps) {
     : isDaily
       ? "Тест дня завершён"
       : "Тренировка завершена";
+
+  // Ссылку выдаём только для завершённой тренировки: прерванная попытка
+  // не даёт результата, которым стоит делиться.
+  const share = abandoned
+    ? null
+    : {
+        url: shareUrl(result.id, createShareToken(result.id, env.AUTH_SECRET), env.APP_URL),
+        title: `${title} — ${result.percent}%`,
+        text: shareMessage({
+          title,
+          correctCount: result.correctCount,
+          questionCount: result.questionCount,
+          percent: result.percent,
+        }),
+      };
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -104,6 +118,8 @@ export default async function AttemptResultPage({ params }: PageProps) {
           </Alert>
         ) : null}
       </Card>
+
+      {share ? <ShareResult url={share.url} title={share.title} text={share.text} /> : null}
 
       {result.topics.length > 1 ? (
         <section aria-labelledby="topics-title" className="space-y-3">
