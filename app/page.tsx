@@ -34,9 +34,16 @@ const steps = [
   },
 ];
 
-function GuestHome() {
+function GuestHome({ accountDeleted }: { accountDeleted: boolean }) {
   return (
     <div className="space-y-10">
+      {accountDeleted ? (
+        <Alert variant="success" title="Аккаунт удалён">
+          Почта, имя и пароль удалены. История и прогресс остались обезличенными. Спасибо,
+          что были с нами.
+        </Alert>
+      ) : null}
+
       <section aria-labelledby="hero-title" className="space-y-6">
         <p className="text-base font-semibold tracking-wide text-accent uppercase">
           Тесты для спокойной проверки знаний
@@ -85,9 +92,16 @@ function GuestHome() {
   );
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const accountDeleted = params.account === "deleted";
+
   const user = await getCurrentUser();
-  if (!user) return <GuestHome />;
+  if (!user) return <GuestHome accountDeleted={accountDeleted} />;
 
   const data = await getHomeData(user.id);
   const { overview, continueCard, recommendations, daily } = data;

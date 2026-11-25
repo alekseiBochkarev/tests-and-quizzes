@@ -3,7 +3,7 @@ import type { MouseEventHandler, ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
-type ButtonVariant = "primary" | "secondary" | "quiet";
+type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 
 type ButtonProps = {
   children: ReactNode;
@@ -28,6 +28,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-accent text-white hover:bg-accent-hover",
   secondary: "border-2 border-accent bg-surface text-accent hover:bg-accent-soft",
   quiet: "bg-transparent px-3 text-accent underline underline-offset-4 hover:text-accent-hover",
+  danger: "bg-danger text-white hover:bg-danger/90",
 };
 
 export function buttonClassName({

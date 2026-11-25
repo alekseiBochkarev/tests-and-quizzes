@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { ReviewButton } from "@/components/attempts/ReviewButton";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClassName } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -271,6 +271,44 @@ export default async function AccountPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="data-title" className="space-y-4">
+        <h2 id="data-title" className="text-2xl font-bold">
+          Данные и аккаунт
+        </h2>
+
+        <Card className="space-y-4">
+          <p className="text-base text-ink-soft">
+            Можно скачать свои данные: профиль, согласия, историю тренировок и прогресс.
+            Файл сохраняется на ваше устройство.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <a
+              href="/api/v1/me/export"
+              download
+              className={buttonClassName({ variant: "secondary" })}
+            >
+              Скачать все данные (JSON)
+            </a>
+            <a
+              href="/api/v1/me/export?format=csv"
+              download
+              className={buttonClassName({ variant: "secondary" })}
+            >
+              История тренировок (CSV)
+            </a>
+          </div>
+          <p className="text-base text-muted">
+            Удаление аккаунта необратимо: почта, имя и пароль удаляются, а история и прогресс
+            остаются обезличенными.
+          </p>
+          <div>
+            <Button href="/account/delete" variant="quiet">
+              Удалить аккаунт…
+            </Button>
+          </div>
+        </Card>
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
