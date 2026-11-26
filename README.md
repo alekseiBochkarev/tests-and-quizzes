@@ -25,6 +25,7 @@
 | [`docs/tasks/09-cookie-consent.md`](docs/tasks/09-cookie-consent.md)           | ACC-03: cookie-баннер, категории, аудит согласий, Cookie-политика, отзыв согласия, API и откат.                                                           |
 | [`docs/tasks/10-account-deletion.md`](docs/tasks/10-account-deletion.md)       | ACC-01: экспорт данных JSON/CSV, удаление через анонимизацию, подтверждение паролем и словом, `AuditLog`, миграция и откат.                                |
 | [`docs/tasks/11-sharing.md`](docs/tasks/11-sharing.md)                         | GRW-01: публичная ссылка на результат, HMAC-токен без миграции, OG-карточка на кириллице, каналы шаринга, приватность и откат.                            |
+| [`docs/tasks/12-content-batch.md`](docs/tasks/12-content-batch.md)             | CNT-02: 8 тем × 60 вопросов, пилот «Советское кино», формат партии, правила факт-чека, импорт и откат.                                                    |
 
 ## Кратко о продукте
 
@@ -80,7 +81,7 @@
 - dev-mailbox `/_dev/mailbox` (только при `APP_ENV != production`), `/api/health`, security-заголовки в `proxy.ts`;
 - unit-тесты прогресса и auth, Playwright e2e и axe, workflow GitHub Actions.
 
-Что дальше: редакционный workflow и аудит (CNT-05), контентная партия до 480+ вопросов (CNT-02), финальные юридические тексты (ACC-04), гостевой режим и merge, награды и дипломы, смена email.
+Что дальше: редакционный workflow и аудит (CNT-05), остальные темы контентной партии до 480+ вопросов (CNT-02), финальные юридические тексты (ACC-04), гостевой режим и merge, награды и дипломы, смена email.
 
 ## Быстрый старт (≤ 10 минут)
 
