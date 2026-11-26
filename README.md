@@ -25,7 +25,7 @@
 | [`docs/tasks/09-cookie-consent.md`](docs/tasks/09-cookie-consent.md)           | ACC-03: cookie-баннер, категории, аудит согласий, Cookie-политика, отзыв согласия, API и откат.                                                           |
 | [`docs/tasks/10-account-deletion.md`](docs/tasks/10-account-deletion.md)       | ACC-01: экспорт данных JSON/CSV, удаление через анонимизацию, подтверждение паролем и словом, `AuditLog`, миграция и откат.                                |
 | [`docs/tasks/11-sharing.md`](docs/tasks/11-sharing.md)                         | GRW-01: публичная ссылка на результат, HMAC-токен без миграции, OG-карточка на кириллице, каналы шаринга, приватность и откат.                            |
-| [`docs/tasks/12-content-batch.md`](docs/tasks/12-content-batch.md)             | CNT-02: 8 тем × 60 вопросов, пилот «Советское кино», формат партии, правила факт-чека, импорт и откат.                                                    |
+| [`docs/tasks/12-content-batch.md`](docs/tasks/12-content-batch.md)             | CNT-02: 8 тем × 60 вопросов, партии «Советское кино» и «Песни и музыка», формат, факт-чек, импорт и откат.                                                |
 
 ## Кратко о продукте
 
