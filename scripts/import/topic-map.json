@@ -2,6 +2,7 @@
   "version": 1,
   "topics": {
     "История": { "category": "nauka", "topic": "history" },
+    "История России": { "category": "nauka", "topic": "history" },
     "Литература": { "category": "nauka", "topic": "literature" },
     "Астрономия": { "category": "nauka", "topic": "space", "title": "Космос" },
     "Космос": { "category": "nauka", "topic": "space", "title": "Космос" },
@@ -10,13 +11,18 @@
     "География": { "category": "priroda", "topic": "geography" },
     "Биология": { "category": "priroda", "topic": "biology", "title": "Биология" },
     "Природа": { "category": "priroda", "topic": "nature", "title": "Природа" },
+    "Природа и животные": { "category": "priroda", "topic": "animals" },
     "Живопись": { "category": "iskusstvo", "topic": "paintings" },
     "Музыка": { "category": "iskusstvo", "topic": "music" },
+    "Песни и музыка": { "category": "iskusstvo", "topic": "music" },
     "Кино": { "category": "kino", "topic": "cinema", "title": "Кино" },
+    "Советское кино": { "category": "kino", "topic": "soviet-cinema" },
     "Спорт": { "category": "krugozor", "topic": "sport" },
     "Техника": { "category": "krugozor", "topic": "technology" },
     "Технологии": { "category": "krugozor", "topic": "technology" },
     "Язык": { "category": "krugozor", "topic": "language" },
-    "Карты": { "category": "krugozor", "topic": "maps-navigation", "title": "Карты и навигация" }
+    "Карты": { "category": "krugozor", "topic": "maps-navigation", "title": "Карты и навигация" },
+    "Кулинария и традиции": { "category": "krugozor", "topic": "cooking", "title": "Кулинария и традиции" },
+    "Быт и ностальгия": { "category": "krugozor", "topic": "nostalgia", "title": "Быт и ностальгия" }
   }
 }
