@@ -172,6 +172,26 @@
 Следующий шаг, если пилот понравится: `Topic.themeKey` в базе и поле в админке,
 чтобы редакция включала оформление без деплоя. Миграция аддитивная.
 
+### 4.7. Иллюстрации к вопросам
+
+Иллюстрация — необязательная часть вопроса. Она показывается под текстом
+вопроса и остаётся рядом с объяснением после ответа.
+
+- Поля `Question`: `imageUrl`, `imageLicense`, `imageSource`, `imageAlt`.
+  `imageUrl` — только https-ссылка, `imageSource` — страница файла или автора,
+  `imageAlt` — описание для незрячих.
+- Разрешены только свободные материалы: CC0, CC BY, CC BY-SA и общественное
+  достояние. Постеры, кадры фильмов и логотипы не используются. Автор входит в
+  подпись к лицензии, например «CC BY-SA 4.0 — A.Savin».
+- Импорт (`lib/content/import.ts`) и админка (`lib/admin/schemas.ts`) проверяют
+  одно и то же: https, разрешённая лицензия и непустой `imageAlt`. Вопрос с
+  нарушением отклоняется с понятной ошибкой.
+- В тренировке под картинкой видны лицензия и ссылка на источник. Пока файлы
+  лежат на Wikimedia Commons; перенос в собственное хранилище — отдельная задача.
+- Описание не должно выдавать ответ: `imageAlt` говорит, что видно на картинке,
+  но не называет правильный вариант. Портреты композиторов к вопросам «кто
+  автор» не используем.
+
 
 ---
 
@@ -184,7 +204,7 @@
 |---|---|---|
 | `Category` | id, slug, title, description, order, createdAt, updatedAt | Раздел каталога |
 | `Topic` | id, categoryId, slug, title, description, coverUrl, order, status | Тема |
-| `Question` | id, topicId, type, text, explanation, imageUrl, imageLicense, difficulty, status, isDemo, contentHash, version | Вопрос; `isDemo` помечает демо-контент |
+| `Question` | id, topicId, type, text, explanation, imageUrl, imageLicense, imageSource, imageAlt, difficulty, status, isDemo, contentHash, version | Вопрос; `isDemo` помечает демо-контент, image-поля — необязательная иллюстрация |
 | `QuestionOption` | id, questionId, text, isCorrect, order | Вариант; `@@unique([questionId, order])` |
 | `Quiz` | id, topicId, slug, title, description, status, isDemo, createdAt, updatedAt | Готовый выпуск внутри темы; `@@unique([topicId, slug])` |
 | `QuizQuestion` | id, quizId, questionId, order | Состав выпуска; `@@unique([quizId, questionId])`, `@@unique([quizId, order])` |

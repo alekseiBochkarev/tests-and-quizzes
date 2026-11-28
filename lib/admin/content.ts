@@ -84,6 +84,8 @@ export type AdminQuestionDetail = {
   explanation: string;
   imageUrl: string | null;
   imageLicense: string | null;
+  imageSource: string | null;
+  imageAlt: string | null;
   difficulty: number;
   status: ContentStatus;
   version: number;
@@ -210,6 +212,8 @@ export async function getAdminQuestion(id: string): Promise<AdminQuestionDetail 
       explanation: true,
       imageUrl: true,
       imageLicense: true,
+      imageSource: true,
+      imageAlt: true,
       difficulty: true,
       status: true,
       version: true,
@@ -233,6 +237,8 @@ export async function getAdminQuestion(id: string): Promise<AdminQuestionDetail 
     explanation: question.explanation,
     imageUrl: question.imageUrl,
     imageLicense: question.imageLicense,
+    imageSource: question.imageSource,
+    imageAlt: question.imageAlt,
     difficulty: question.difficulty,
     status: question.status,
     version: question.version,
@@ -359,6 +365,8 @@ function questionCreateData(
     explanation: input.explanation,
     imageUrl: input.imageUrl,
     imageLicense: input.imageLicense,
+    imageSource: input.imageSource,
+    imageAlt: input.imageAlt,
     difficulty: input.difficulty,
     status: input.status,
     isDemo: false,
@@ -500,6 +508,8 @@ export async function updateQuestion(
       explanation: true,
       imageUrl: true,
       imageLicense: true,
+      imageSource: true,
+      imageAlt: true,
       difficulty: true,
       status: true,
       version: true,
@@ -570,6 +580,8 @@ export async function updateQuestion(
     existing.explanation !== input.explanation ||
     existing.imageUrl !== input.imageUrl ||
     existing.imageLicense !== input.imageLicense ||
+    existing.imageSource !== input.imageSource ||
+    existing.imageAlt !== input.imageAlt ||
     existing.difficulty !== input.difficulty ||
     existing.status !== input.status;
 
@@ -582,6 +594,8 @@ export async function updateQuestion(
           explanation: input.explanation,
           imageUrl: input.imageUrl,
           imageLicense: input.imageLicense,
+          imageSource: input.imageSource,
+          imageAlt: input.imageAlt,
           difficulty: input.difficulty,
           status: input.status,
           contentHash,
@@ -796,6 +810,10 @@ function createImportQuestion(tx: Tx, topicId: string, item: ImportItem, version
       type: "SINGLE_CHOICE",
       text: item.text,
       explanation: item.explanation,
+      imageUrl: item.imageUrl,
+      imageLicense: item.imageLicense,
+      imageSource: item.imageSource,
+      imageAlt: item.imageAlt,
       difficulty: DEFAULT_DIFFICULTY,
       status: item.status,
       isDemo: false,
@@ -837,6 +855,10 @@ export async function applyAdminImport(
             where: { id: action.targetId },
             data: {
               explanation: action.item.explanation,
+              imageUrl: action.item.imageUrl,
+              imageLicense: action.item.imageLicense,
+              imageSource: action.item.imageSource,
+              imageAlt: action.item.imageAlt,
               status: action.item.status,
               version: { increment: 1 },
             },

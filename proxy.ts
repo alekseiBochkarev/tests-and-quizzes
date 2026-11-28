@@ -24,7 +24,9 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // Иллюстрации вопросов пока лежат на Wikimedia Commons; перенос
+    // в собственное хранилище — отдельная задача, тогда домен уберём.
+    "img-src 'self' data: blob: https://upload.wikimedia.org",
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     "frame-ancestors 'none'",

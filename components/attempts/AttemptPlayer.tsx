@@ -224,6 +224,34 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
       <Card className="space-y-5">
         <h1 className="text-2xl font-bold leading-snug sm:text-3xl">{question.text}</h1>
 
+        {question.imageUrl ? (
+          <figure className="space-y-2">
+            {/* Внешние иллюстрации: перенос в собственное хранилище — отдельная задача. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={question.imageUrl}
+              alt={question.imageAlt ?? ""}
+              loading="lazy"
+              className="max-h-80 w-full rounded-card border border-line bg-surface object-contain"
+            />
+            {question.imageLicense ? (
+              <figcaption className="text-base text-muted">
+                Лицензия: {question.imageLicense}.{" "}
+                {question.imageSource ? (
+                  <a
+                    href={question.imageSource}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-4"
+                  >
+                    Источник изображения
+                  </a>
+                ) : null}
+              </figcaption>
+            ) : null}
+          </figure>
+        ) : null}
+
         <fieldset className="space-y-3" disabled={Boolean(feedback) || submitting}>
           <legend className="text-lg font-semibold text-ink">Выберите один вариант</legend>
 

@@ -348,6 +348,11 @@ export type AttemptQuestionPayload = {
   isCorrect: boolean | null;
   correctOptionId: string | null;
   explanation: string | null;
+  /** Иллюстрация к вопросу: показывается и до ответа, и после. */
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageLicense: string | null;
+  imageSource: string | null;
   xpAwarded: number;
 };
 
@@ -411,6 +416,10 @@ export async function getAttemptState(
       isCorrect: answer.isCorrect,
       correctOptionId: answered ? (correctOption?.id ?? null) : null,
       explanation: answered ? answer.question.explanation : null,
+      imageUrl: answer.question.imageUrl,
+      imageAlt: answer.question.imageAlt,
+      imageLicense: answer.question.imageLicense,
+      imageSource: answer.question.imageSource,
       xpAwarded: answer.xpAwarded,
     };
   });
