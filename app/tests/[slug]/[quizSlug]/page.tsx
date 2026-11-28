@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StartQuiz } from "@/components/content/StartQuiz";
+import { TopicMark } from "@/components/content/TopicArt";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getQuizBySlug } from "@/lib/quizzes/service";
 import { questionWord } from "@/lib/ui/text";
+import { resolveTopicTheme } from "@/lib/ui/topicThemes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,9 +35,11 @@ export default async function QuizPage({ params }: PageProps) {
   if (!quiz) notFound();
 
   const quizPath = `/tests/${quiz.topic.slug}/${quiz.slug}`;
+  // Уровень A+: акцент, знак и короткая шапка. Ключ из базы, карта slug — фолбэк.
+  const theme = resolveTopicTheme(quiz.topic.slug, quiz.topic.themeKey);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-topic-theme={theme ?? undefined}>
       <nav aria-label="Хлебные крошки" className="text-base text-muted">
         <ol className="flex flex-wrap items-center gap-2">
           <li>
@@ -57,18 +61,22 @@ export default async function QuizPage({ params }: PageProps) {
         </ol>
       </nav>
 
-      <div className="space-y-3">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">
-          {quiz.topic.category.title}
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{quiz.title}</h1>
-        {quiz.description ? (
-          <p className="max-w-3xl text-xl text-ink-soft">{quiz.description}</p>
-        ) : null}
-        <p className="text-base text-muted">
-          Готовый выпуск по теме «{quiz.topic.title}»: {quiz.questionCount}{" "}
-          {questionWord(quiz.questionCount)} с объяснениями. Без таймера и спешки.
-        </p>
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <p className="flex items-center gap-2 text-base font-semibold tracking-[0.02em] text-accent normal-case">
+            {theme ? <TopicMark theme={theme} className="h-8 w-8" /> : null}
+            {quiz.topic.category.title}
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{quiz.title}</h1>
+          {quiz.description ? (
+            <p className="max-w-prose text-xl text-ink-soft">{quiz.description}</p>
+          ) : null}
+          <p className="text-base text-muted">
+            Готовый выпуск по теме «{quiz.topic.title}»: {quiz.questionCount}{" "}
+            {questionWord(quiz.questionCount)} с объяснениями. Без таймера и спешки.
+          </p>
+        </div>
+        {theme ? <div className="topic-stripe" aria-hidden="true" /> : null}
       </div>
 
       <div className="max-w-3xl">

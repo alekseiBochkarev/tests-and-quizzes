@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+import { APP_URL, escapeRegExp } from "./appUrl";
 import { login, registerAndVerify } from "./helpers";
 
 /**
@@ -60,10 +61,12 @@ test.describe("Поделиться результатом", () => {
 
     const shareLinkInput = page.getByLabel("Ссылка на результат");
     const shareLink = await shareLinkInput.inputValue();
-    expect(shareLink).toMatch(/^http:\/\/localhost:3000\/share\/[^/]+\/[A-Za-z0-9_-]{32}$/);
+    expect(shareLink).toMatch(
+      new RegExp(`^${escapeRegExp(APP_URL)}/share/[^/]+/[A-Za-z0-9_-]{32}$`),
+    );
 
     await context.grantPermissions(["clipboard-read", "clipboard-write"], {
-      origin: "http://localhost:3000",
+      origin: APP_URL,
     });
     await page.getByRole("button", { name: "Скопировать ссылку" }).click();
     await expect(page.getByText(/Ссылка скопирована/)).toBeVisible();

@@ -29,10 +29,14 @@
   --font-sans:
     var(--font-golos), "Golos Text", "PT Sans", "Segoe UI", system-ui, -apple-system, Arial,
     sans-serif;
+  /* «Книжный» тон (PT Serif 700) — только h1 тем «Литература» и «История». */
+  --font-serif: var(--font-pt-serif), var(--font-golos), Georgia, "Times New Roman", serif;
 }
 
 html {
   font-size: 18px;
+  /* Страница остаётся светлой при тёмной теме ОС: нативные контролы не чернеют. */
+  color-scheme: light;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
 }
@@ -103,25 +107,31 @@ a {
 }
 
 /*
- * Оформление тем (пилот): «Советское кино» и «Музыка».
+ * Оформление тем (VIS-01): девять пресетов.
  *
  * Тема включается атрибутом data-topic-theme на контейнере страницы и меняет
  * только акцентные токены и декоративный слой «шапки»/полосы. Подложки под
  * вопросами и цвет текста остаются базовыми, поэтому контраст не падает.
  *
- * Проверенный контраст:
- *   белый на #7a3b12 — 8.5:1, на #6b3f86 — 7.8:1;
- *   акцент на фоне #f6f4ef — 7.8:1 и 7.1:1.
+ * Контраст посчитан по самому тёмному стопу wash (WCAG 2.1):
+ *   белый на акценте — 7.59–13.01:1, акцент на бумаге #f6f4ef — 6.91–11.84:1,
+ *   вторичный текст на wash — не ниже 7:1.
+ *
+ * Уровень A (history, geography, cooking, nostalgia) шапки-сцены не имеет,
+ * поэтому --topic-hero-pattern у них `none`: остаются акцент, знак и полоса
+ * (§6.6–6.7 ТЗ). Wash у всех тем — линейный градиент 135° из первого цвета
+ * через промежуточный стоп (55 %) в белый.
  */
 [data-topic-theme="cinema"] {
   --color-accent: #7a3b12;
   --color-accent-hover: #5e2d0d;
   --color-accent-soft: #f4e7d7;
-  /* Тёплый свет проектора и сепия — без постеров и логотипов. */
-  --topic-hero-wash:
-    radial-gradient(circle at 12% 0%, rgba(255, 205, 138, 0.55), transparent 55%),
-    linear-gradient(135deg, #f7e9d5 0%, #fbf5ea 55%, #ffffff 100%);
-  /* Перфорация киноплёнки. */
+  /*
+   * Тёплый свет сеанса. Линейный wash вместо радиального блика проектора:
+   * на его стопах вторичный текст держит ≥ 7:1 (§6 ТЗ), а «чернила» — ≥ 14:1.
+   */
+  --topic-hero-wash: linear-gradient(135deg, #fff1dc 0%, #fffaf2 55%, #ffffff 100%);
+  /* Перфорация киноплёнки по верхней и нижней кромке шапки. */
   --topic-hero-pattern: repeating-linear-gradient(
     90deg,
     rgba(122, 59, 18, 0.3) 0 0.55rem,
@@ -144,7 +154,7 @@ a {
   /* Нотный стан: пять тонких линий. */
   --topic-hero-pattern: repeating-linear-gradient(
     to bottom,
-    rgba(107, 63, 134, 0.22) 0 1px,
+    rgba(107, 63, 134, 0.2) 0 1px,
     transparent 1px 0.62rem
   );
   --topic-stripe: linear-gradient(90deg, #6b3f86 0%, #9a6fb3 50%, #d9c4e6 100%);
@@ -153,6 +163,128 @@ a {
     to bottom,
     rgba(255, 255, 255, 0.45) 0 1px,
     transparent 1px 0.38rem
+  );
+}
+
+[data-topic-theme="literature"] {
+  --color-accent: #7a2e3a;
+  --color-accent-hover: #5c212b;
+  --color-accent-soft: #f3e4e6;
+  --topic-hero-wash: linear-gradient(135deg, #fbf5f1 0%, #fdfbf9 55%, #ffffff 100%);
+  /* Тонкие линейки книжной страницы: 1 px, 16 %, шаг 0.9 rem. */
+  --topic-hero-pattern: repeating-linear-gradient(
+    to bottom,
+    rgba(122, 46, 58, 0.16) 0 1px,
+    transparent 1px 0.9rem
+  );
+  --topic-stripe: linear-gradient(90deg, #7a2e3a 0%, #a35c67 45%, #b7959a 100%);
+  /* Поля страницы: редкие вертикальные линейки. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.5) 0 1px,
+    transparent 1px 0.9rem
+  );
+}
+
+[data-topic-theme="history"] {
+  --color-accent: #6b4a1f;
+  --color-accent-hover: #4f3514;
+  --color-accent-soft: #f1e9db;
+  --topic-hero-wash: linear-gradient(135deg, #faf5ea 0%, #fdfbf6 55%, #ffffff 100%);
+  /* Уровень A: шапки-сцены и паттерна нет. */
+  --topic-hero-pattern: none;
+  --topic-stripe: linear-gradient(90deg, #6b4a1f 0%, #97754a 45%, #af9a7e 100%);
+  /* Штрихи архивной бумаги на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.4) 0 2px,
+    transparent 2px 0.8rem
+  );
+}
+
+[data-topic-theme="geography"] {
+  --color-accent: #1f4e6b;
+  --color-accent-hover: #163a50;
+  --color-accent-soft: #e4eff5;
+  --topic-hero-wash: linear-gradient(135deg, #eef5f9 0%, #f7fbfc 55%, #ffffff 100%);
+  /* Уровень A: шапки-сцены и паттерна нет. */
+  --topic-hero-pattern: none;
+  --topic-stripe: linear-gradient(90deg, #1f4e6b 0%, #4a7997 45%, #7e9caf 100%);
+  /* Меридианы на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.45) 0 1px,
+    transparent 1px 1.1rem
+  );
+}
+
+[data-topic-theme="animals"] {
+  --color-accent: #1f5b3a;
+  --color-accent-hover: #173f2a;
+  --color-accent-soft: #e6f0e9;
+  --topic-hero-wash: linear-gradient(135deg, #eef6f0 0%, #f7fbf8 55%, #ffffff 100%);
+  /*
+   * SVG-тайл 64×64: два контура листа, один цвет, 6 % (≈0.4 КБ).
+   * Прозрачность зашита в сам тайл, поэтому кромка не приглушается повторно.
+   */
+  --topic-hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%231f5b3a' stroke-opacity='.06' stroke-width='1'%3E%3Cpath d='M6 26c0-11 9-20 20-20 0 11-9 20-20 20Z'/%3E%3Cpath d='M26 58c11 0 20-9 20-20-11 0-20 9-20 20Z'/%3E%3C/g%3E%3C/svg%3E");
+  --topic-stripe: linear-gradient(90deg, #1f5b3a 0%, #498865 45%, #77a68c 100%);
+  /* Следы на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.5) 0 0.35rem,
+    transparent 0.35rem 1.1rem
+  );
+}
+
+[data-topic-theme="magic"] {
+  --color-accent: #2f2a5e;
+  --color-accent-hover: #232045;
+  --color-accent-soft: #e7e4f0;
+  --topic-hero-wash: linear-gradient(135deg, #f3f1fa 0%, #faf9fd 55%, #ffffff 100%);
+  /*
+   * SVG-тайл 64×64: «звёздная россыпь», один цвет, 20 % — только вне текста
+   * (в кромках шапки). Без логотипа, молнии и силуэтов (§6.5 ТЗ, ≈0.5 КБ).
+   */
+  --topic-hero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='%232f2a5e' fill-opacity='.2'%3E%3Ccircle cx='7' cy='11' r='1'/%3E%3Ccircle cx='29' cy='21' r='1'/%3E%3Ccircle cx='52' cy='8' r='1'/%3E%3Ccircle cx='17' cy='41' r='1'/%3E%3Ccircle cx='45' cy='45' r='1'/%3E%3Ccircle cx='59' cy='31' r='1'/%3E%3Ccircle cx='33' cy='55' r='1'/%3E%3Cpath d='M8 51l1.2 3.3L12.5 55.5l-3.3 1.2L8 60l-1.2-3.3L3.5 55.5l3.3-1.2Z'/%3E%3C/g%3E%3C/svg%3E");
+  --topic-stripe: linear-gradient(90deg, #2f2a5e 0%, #5a558a 45%, #8885a7 100%);
+  /* Звёздные искры на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0 2px,
+    transparent 2px 0.9rem
+  );
+}
+
+[data-topic-theme="cooking"] {
+  --color-accent: #8c3b24;
+  --color-accent-hover: #6b2c1a;
+  --color-accent-soft: #f6e7e0;
+  --topic-hero-wash: linear-gradient(135deg, #fcf2ec 0%, #fef9f6 55%, #ffffff 100%);
+  /* Уровень A: шапки-сцены и паттерна нет. */
+  --topic-hero-pattern: none;
+  --topic-stripe: linear-gradient(90deg, #8c3b24 0%, #b16a56 45%, #bf9e94 100%);
+  /* Колосья-штрихи на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.5) 0 0.45rem,
+    transparent 0.45rem 1.2rem
+  );
+}
+
+[data-topic-theme="nostalgia"] {
+  --color-accent: #3f4e66;
+  --color-accent-hover: #2f3b4f;
+  --color-accent-soft: #e8ecf2;
+  --topic-hero-wash: linear-gradient(135deg, #f1f4f8 0%, #f9fafc 55%, #ffffff 100%);
+  /* Уровень A: шапки-сцены и паттерна нет. */
+  --topic-hero-pattern: none;
+  --topic-stripe: linear-gradient(90deg, #3f4e66 0%, #6b7a90 45%, #9ba2ad 100%);
+  /* Штриховка «оконной рамы» на полосе. */
+  --topic-band-pattern: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0 1px,
+    transparent 1px 0.7rem
   );
 }
 
@@ -189,8 +321,24 @@ a {
 }
 
 @media (max-width: 640px) {
+  /*
+   * Шапка встаёт в колонку: надзаголовок, h1 и описание идут первыми,
+   * сцена уходит под текст и занимает не более 40 % ширины контейнера,
+   * чтобы h1 оставался первым и LCP-элементом (§3.4 ТЗ).
+   */
+  .topic-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topic-hero-copy {
+    flex: 0 0 auto;
+  }
+
   .topic-hero-art {
-    width: 10.5rem;
+    width: 40%;
+    max-width: 11rem;
+    margin-inline: 0 auto;
   }
 }
 
@@ -218,6 +366,18 @@ a {
 
 .topic-hero::after {
   bottom: 0;
+}
+
+/*
+ * Градиентные паттерны (перфорация, нотный стан, линейки) рисуем приглушённо,
+ * а SVG-тайлы «Животных» и «Гарри Поттера» уже несут свою прозрачность
+ * (6 % и 20 %), поэтому кромку для них не притушиваем повторно.
+ */
+[data-topic-theme="animals"] .topic-hero::before,
+[data-topic-theme="animals"] .topic-hero::after,
+[data-topic-theme="magic"] .topic-hero::before,
+[data-topic-theme="magic"] .topic-hero::after {
+  opacity: 1;
 }
 
 /* У музыки нижняя кромка — клавиатура: белые клавиши с чёрными. */
@@ -253,6 +413,52 @@ a {
   background-image:
     var(--topic-band-pattern, none),
     var(--topic-stripe, linear-gradient(90deg, var(--color-accent), var(--color-accent)));
+}
+
+/*
+ * Полоса 3 px сверху карточки каталога (уровень A): повторяет радиус карточки,
+ * без тени. Знак темы ставится разметкой карточки (§3.5 ТЗ).
+ */
+.topic-card-band {
+  height: 3px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background-color: var(--color-accent);
+  background-image: var(--topic-stripe, linear-gradient(90deg, var(--color-accent), var(--color-accent)));
+  box-shadow: none;
+}
+
+/*
+ * Печать: декор темы исчезает, остаются текст, ссылки и линии 1 px.
+ * `print-color-adjust: exact` не используем — заливки не печатаются.
+ */
+@media print {
+  body {
+    background-color: #ffffff;
+  }
+
+  .topic-hero {
+    background-color: #ffffff;
+    background-image: none;
+    border: 1px solid #111111;
+    box-shadow: none;
+  }
+
+  .topic-hero::before,
+  .topic-hero::after {
+    display: none;
+  }
+
+  .topic-hero-art,
+  .topic-stripe,
+  .topic-card-band {
+    display: none;
+  }
+
+  /* Без заливки кнопок белый текст был бы невидим: держим тёмный и контрастный. */
+  a,
+  button {
+    color: #111111;
+  }
 }
 
 /* Уважаем системную настройку «уменьшить движение». */

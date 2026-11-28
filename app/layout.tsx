@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Golos_Text } from "next/font/google";
+import { Golos_Text, PT_Serif } from "next/font/google";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 
@@ -18,6 +18,17 @@ const golos = Golos_Text({
   weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-golos",
+});
+
+/**
+ * «Книжная» антиква для h1 тем «Литература» и «История».
+ * Одно начертание 700 и два подмножества: минимум веса, CSP не меняется.
+ */
+const ptSerif = PT_Serif({
+  subsets: ["cyrillic", "latin"],
+  weight: "700",
+  display: "swap",
+  variable: "--font-pt-serif",
 });
 
 export const metadata: Metadata = {
@@ -44,7 +55,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   );
 
   return (
-    <html lang="ru" data-text-size={textSize} className={golos.variable}>
+    <html lang="ru" data-text-size={textSize} className={`${golos.variable} ${ptSerif.variable}`}>
       <body className="flex min-h-screen flex-col">
         <SkipLink />
         <SiteHeader textSize={textSize} />

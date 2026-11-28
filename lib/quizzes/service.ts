@@ -17,6 +17,8 @@ export type QuizDetails = TopicQuizSummary & {
     id: string;
     slug: string;
     title: string;
+    /** Сырое значение `Topic.themeKey`; резолвится на странице через `resolveTopicTheme`. */
+    themeKey: string | null;
     category: { slug: string; title: string };
   };
 };
@@ -83,6 +85,7 @@ export async function getQuizBySlug(
           id: true,
           slug: true,
           title: true,
+          themeKey: true,
           category: { select: { slug: true, title: true } },
         },
       },

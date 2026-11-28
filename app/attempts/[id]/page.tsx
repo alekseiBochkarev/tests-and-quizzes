@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { AttemptPlayer } from "@/components/attempts/AttemptPlayer";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getAttemptState } from "@/lib/attempts/service";
-import { getTopicTheme } from "@/lib/ui/topicThemes";
+import { resolveTopicTheme } from "@/lib/ui/topicThemes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,7 +31,7 @@ export default async function AttemptPage({ params }: PageProps) {
     redirect(`/attempts/${id}/result`);
   }
 
-  const theme = getTopicTheme(attempt.topicSlug);
+  const theme = resolveTopicTheme(attempt.topicSlug, attempt.topicThemeKey);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4" data-topic-theme={theme ?? undefined}>

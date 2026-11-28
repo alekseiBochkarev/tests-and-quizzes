@@ -369,6 +369,8 @@ export type AttemptState = {
   durationSec: number | null;
   topicTitle: string | null;
   topicSlug: string | null;
+  /** Сырое значение `Topic.themeKey`: тему резолвит страница/плеер. */
+  topicThemeKey: string | null;
   categoryTitle: string | null;
   quizTitle: string | null;
   currentOrder: number;
@@ -382,7 +384,7 @@ export async function getAttemptState(
   const attempt = await prisma.attempt.findFirst({
     where: { id: attemptId, userId },
     include: {
-      topic: { select: { title: true, slug: true } },
+      topic: { select: { title: true, slug: true, themeKey: true } },
       category: { select: { title: true } },
       quiz: { select: { title: true } },
       answers: {
@@ -439,6 +441,7 @@ export async function getAttemptState(
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
     topicSlug: attempt.topic?.slug ?? null,
+    topicThemeKey: attempt.topic?.themeKey ?? null,
     categoryTitle: attempt.category?.title ?? null,
     quizTitle: attempt.quiz?.title ?? null,
     currentOrder: firstUnanswered?.order ?? questions.length,
@@ -696,6 +699,9 @@ export type AttemptResult = {
   finishedAt: Date | null;
   durationSec: number | null;
   topicTitle: string | null;
+  /** Слаг и сырой ключ оформления темы — для полосы и атрибута на результате. */
+  topicSlug: string | null;
+  topicThemeKey: string | null;
   categoryTitle: string | null;
   quizTitle: string | null;
   topics: Array<{ title: string; total: number; correct: number }>;
@@ -716,7 +722,7 @@ export async function getAttemptResult(
   const attempt = await prisma.attempt.findFirst({
     where: { id: attemptId, userId },
     include: {
-      topic: { select: { title: true } },
+      topic: { select: { title: true, slug: true, themeKey: true } },
       category: { select: { title: true } },
       quiz: { select: { title: true } },
       answers: {
@@ -778,6 +784,8 @@ export async function getAttemptResult(
     finishedAt: attempt.finishedAt,
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
+    topicSlug: attempt.topic?.slug ?? null,
+    topicThemeKey: attempt.topic?.themeKey ?? null,
     categoryTitle: attempt.category?.title ?? null,
     quizTitle: attempt.quiz?.title ?? null,
     topics: [...topicMap.values()],

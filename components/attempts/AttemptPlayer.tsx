@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { AttemptState } from "@/lib/attempts/service";
 import { questionLevelLabel } from "@/lib/ui/text";
-import { getTopicTheme } from "@/lib/ui/topicThemes";
+import { resolveTopicTheme } from "@/lib/ui/topicThemes";
 import { cn } from "@/lib/utils/cn";
 
 type Question = AttemptState["questions"][number];
@@ -76,10 +76,10 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
   const title =
     attempt.mode === "DAILY"
       ? "Тест дня"
-      : attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка";
+      : (attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка");
   const isLast = currentIndex >= total - 1;
   const resumed = attempt.answeredCount > 0;
-  const theme = getTopicTheme(attempt.topicSlug);
+  const theme = resolveTopicTheme(attempt.topicSlug, attempt.topicThemeKey);
 
   async function submitAnswer() {
     if (!question || !selectedOptionId || feedback) return;
@@ -138,9 +138,7 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
   }
 
   function goNext() {
-    const nextIndex = questions.findIndex(
-      (item, index) => index > currentIndex && !item.answered,
-    );
+    const nextIndex = questions.findIndex((item, index) => index > currentIndex && !item.answered);
     const target = nextIndex === -1 ? Math.min(total - 1, currentIndex + 1) : nextIndex;
 
     setCurrentIndex(target);
@@ -199,8 +197,8 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="flex items-center gap-2 text-base font-semibold tracking-wide text-accent uppercase">
-            {theme ? <TopicMark theme={theme} className="h-6 w-6" /> : null}
+          <p className="flex items-center gap-2 text-base font-semibold tracking-[0.02em] text-accent normal-case">
+            {theme ? <TopicMark theme={theme} className="h-8 w-8" /> : null}
             {title}
           </p>
           <p className="text-lg font-semibold text-ink">
@@ -221,7 +219,8 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
         ) : null}
       </div>
 
-      <Card className="space-y-5">
+      {/* Карточка вопроса всегда белая, независимо от темы: читаемость важнее декора. */}
+      <Card className="space-y-5 bg-white">
         <h1 className="text-2xl font-bold leading-snug sm:text-3xl">{question.text}</h1>
 
         {question.imageUrl ? (
