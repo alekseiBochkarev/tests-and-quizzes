@@ -14,6 +14,7 @@ import { env } from "@/lib/env";
 import { shareMessage } from "@/lib/share/text";
 import { createShareToken, shareUrl } from "@/lib/share/token";
 import { questionWord } from "@/lib/ui/text";
+import { resolveTopicTheme } from "@/lib/ui/topicThemes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,6 +44,8 @@ export default async function AttemptResultPage({ params }: PageProps) {
   const isDaily = result.mode === "DAILY";
   const title = attemptTitle(result);
   const label = attemptKindLabel(result);
+  // Уровень A: только полоса и акцент в цифрах, сцены на разборе нет (§3.8 ТЗ).
+  const theme = resolveTopicTheme(result.topicSlug, result.topicThemeKey);
   const answeredAll = result.answeredCount >= result.questionCount;
   const abandoned = result.status === "ABANDONED";
   const heading = abandoned
@@ -69,9 +72,10 @@ export default async function AttemptResultPage({ params }: PageProps) {
       };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8" data-topic-theme={theme ?? undefined}>
+      {theme ? <div className="topic-stripe" aria-hidden="true" /> : null}
       <div className="space-y-3">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">{label}</p>
+        <p className="text-base font-semibold tracking-[0.02em] text-muted normal-case">{label}</p>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{heading}</h1>
         {abandoned ? (
           <p className="text-lg text-ink-soft">
@@ -155,7 +159,7 @@ export default async function AttemptResultPage({ params }: PageProps) {
           <div className="space-y-4">
             {result.mistakes.map((mistake) => (
               <Card key={mistake.questionId} className="space-y-3">
-                <p className="text-base font-semibold tracking-wide text-muted uppercase">
+                <p className="text-base font-semibold tracking-[0.02em] text-muted normal-case">
                   {mistake.topic}
                 </p>
                 <h3 className="text-xl font-bold leading-snug">{mistake.question}</h3>
@@ -164,8 +168,7 @@ export default async function AttemptResultPage({ params }: PageProps) {
                   {mistake.selectedAnswer ?? "ответа не было"}
                 </p>
                 <p className="text-base text-ink-soft">
-                  <span className="font-semibold">Правильный ответ:</span>{" "}
-                  {mistake.correctAnswer}
+                  <span className="font-semibold">Правильный ответ:</span> {mistake.correctAnswer}
                 </p>
                 <p className="text-base text-ink">{mistake.explanation}</p>
               </Card>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getCatalog } from "@/lib/content/catalog";
 import { getUserInterests } from "@/lib/interests/service";
+import { resolveTopicTheme } from "@/lib/ui/topicThemes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,9 +30,9 @@ export default async function TestsPage() {
     <div className="space-y-8">
       <div className="space-y-3">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Тесты</h1>
-        <p className="max-w-3xl text-lg text-ink-soft">
-          Выберите раздел, затем тему. В каждой тренировке — понятные вопросы с объяснениями,
-          без таймера и спешки.
+        <p className="max-w-prose text-lg text-ink-soft">
+          Выберите раздел, затем тему. В каждой тренировке — понятные вопросы с объяснениями, без
+          таймера и спешки.
         </p>
       </div>
 
@@ -85,7 +86,7 @@ export default async function TestsPage() {
                   {category.title}
                 </h2>
                 {category.description ? (
-                  <p className="max-w-3xl text-base text-ink-soft">{category.description}</p>
+                  <p className="max-w-prose text-base text-ink-soft">{category.description}</p>
                 ) : null}
               </div>
 
@@ -97,6 +98,7 @@ export default async function TestsPage() {
                     title={topic.title}
                     description={topic.description}
                     questionCount={topic.questionCount}
+                    theme={resolveTopicTheme(topic.slug, topic.themeKey)}
                     progress={topic.progress}
                   />
                 ))}

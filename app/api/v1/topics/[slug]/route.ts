@@ -1,6 +1,7 @@
 import { handleRouteError } from "@/lib/auth/api";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getTopicBySlug } from "@/lib/content/catalog";
+import { topicResponseSchema } from "@/lib/content/schemas";
 import { fail, ok } from "@/lib/http/json";
 import { getRequestId } from "@/lib/http/requestId";
 
@@ -20,7 +21,8 @@ export async function GET(request: Request, context: RouteContext) {
     if (!topic) {
       return fail("topic_not_found", "Тема не найдена.", { requestId, status: 404 });
     }
-    return ok({ topic }, { requestId });
+    const payload = topicResponseSchema.parse({ topic });
+    return ok(payload, { requestId });
   } catch (error) {
     return handleRouteError(error, requestId, "topics");
   }

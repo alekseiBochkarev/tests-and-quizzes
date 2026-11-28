@@ -1,5 +1,6 @@
 import { ContentStatus } from "@/lib/generated/prisma/enums";
 import { prisma } from "@/lib/db";
+import { resolveTopicTheme, type TopicThemeKey } from "@/lib/ui/topicThemes";
 
 /**
  * Каталог: разделы → темы с количеством опубликованных вопросов и прогрессом.
@@ -11,6 +12,8 @@ export type CatalogTopic = {
   slug: string;
   title: string;
   description: string | null;
+  /** Ключ оформления; `null` — тема нейтральная. */
+  themeKey: TopicThemeKey | null;
   questionCount: number;
   progress: {
     progress: number;
@@ -68,6 +71,7 @@ export async function getCatalog(userId: string | null): Promise<CatalogCategory
             slug: topic.slug,
             title: topic.title,
             description: topic.description,
+            themeKey: resolveTopicTheme(topic.slug, topic.themeKey),
             questionCount: topic._count.questions,
             progress: progress
               ? {
@@ -95,6 +99,7 @@ export async function getTopicBySlug(
   slug: string;
   title: string;
   description: string | null;
+  themeKey: TopicThemeKey | null;
   category: { slug: string; title: string };
   questionCount: number;
   progress: CatalogTopic["progress"];
@@ -122,6 +127,7 @@ export async function getTopicBySlug(
     slug: topic.slug,
     title: topic.title,
     description: topic.description,
+    themeKey: resolveTopicTheme(topic.slug, topic.themeKey),
     category: topic.category,
     questionCount: topic._count.questions,
     progress: progress

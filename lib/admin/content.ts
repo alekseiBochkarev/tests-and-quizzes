@@ -21,6 +21,7 @@ import {
 } from "@/lib/admin/importPlan";
 import { questionContentChanged } from "@/lib/admin/contentRules";
 import type { ImportInput, QuestionInput, TopicInput } from "@/lib/admin/schemas";
+import { isTopicThemeKey, type TopicThemeKey } from "@/lib/ui/topicThemes";
 
 /**
  * Сервис контентной админки (CNT-04).
@@ -72,6 +73,8 @@ export type AdminQuestionListItem = {
 export type AdminTopicDetail = Omit<AdminTopicListItem, "questionCount" | "publishedCount" | "draftCount" | "archivedCount" | "demoCount"> & {
   description: string | null;
   coverUrl: string | null;
+  /** Тема оформления: только известный ключ, иначе нейтрально. */
+  themeKey: TopicThemeKey | null;
   questions: AdminQuestionListItem[];
 };
 
@@ -157,6 +160,7 @@ export async function getAdminTopic(id: string): Promise<AdminTopicDetail | null
       title: true,
       description: true,
       coverUrl: true,
+      themeKey: true,
       status: true,
       order: true,
       categoryId: true,
@@ -185,6 +189,7 @@ export async function getAdminTopic(id: string): Promise<AdminTopicDetail | null
     title: topic.title,
     description: topic.description,
     coverUrl: topic.coverUrl,
+    themeKey: isTopicThemeKey(topic.themeKey) ? topic.themeKey : null,
     status: topic.status,
     order: topic.order,
     categoryId: topic.categoryId,
@@ -283,6 +288,7 @@ export async function createTopic(input: TopicInput): Promise<{ id: string; slug
       title: input.title,
       description: input.description,
       coverUrl: input.coverUrl,
+      themeKey: input.themeKey,
       order,
       status: input.status,
     },
@@ -330,6 +336,7 @@ export async function updateTopic(id: string, input: TopicInput): Promise<{ id: 
       title: input.title,
       description: input.description,
       coverUrl: input.coverUrl,
+      themeKey: input.themeKey,
       order: input.order,
       status: input.status,
     },

@@ -70,6 +70,32 @@ describe("topicInputSchema", () => {
     expect(topicInputSchema.safeParse({ ...validTopic, order: -1 }).success).toBe(false);
     expect(topicInputSchema.safeParse({ ...validTopic, order: 1.5 }).success).toBe(false);
   });
+
+  it("принимает известный ключ оформления", () => {
+    const parsed = topicInputSchema.safeParse({ ...validTopic, themeKey: "cinema" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.themeKey).toBe("cinema");
+  });
+
+  it("разрешает снять оформление", () => {
+    const parsed = topicInputSchema.safeParse({ ...validTopic, themeKey: null });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.themeKey).toBeNull();
+  });
+
+  it("по умолчанию оставляет тему без оформления", () => {
+    const parsed = topicInputSchema.safeParse(validTopic);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.themeKey).toBeNull();
+  });
+
+  it("отклоняет неизвестный ключ оформления", () => {
+    const parsed = topicInputSchema.safeParse({ ...validTopic, themeKey: "neon" });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues.some((issue) => issue.path[0] === "themeKey")).toBe(true);
+    }
+  });
 });
 
 describe("questionInputSchema", () => {

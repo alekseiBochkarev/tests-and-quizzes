@@ -186,6 +186,8 @@ model Topic {
   title       String
   description String?
   coverUrl    String?
+  // Ключ тематического оформления (VIS-01). Пусто — фолбэк по slug или нейтрально.
+  themeKey    String?       @db.VarChar(32)
   order       Int           @default(0)
   status      ContentStatus @default(PUBLISHED)
   createdAt   DateTime      @default(now())

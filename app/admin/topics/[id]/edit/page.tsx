@@ -51,6 +51,7 @@ export default async function AdminEditTopicPage({ params }: PageProps) {
           slug: topic.slug,
           description: topic.description,
           coverUrl: topic.coverUrl,
+          themeKey: topic.themeKey,
           order: topic.order,
           status: topic.status,
           categoryId: topic.categoryId,

@@ -45,7 +45,7 @@ function GuestHome({ accountDeleted }: { accountDeleted: boolean }) {
       ) : null}
 
       <section aria-labelledby="hero-title" className="space-y-6">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">
+        <p className="text-base font-semibold tracking-[0.02em] text-accent normal-case">
           Тесты для спокойной проверки знаний
         </p>
         <h1 id="hero-title" className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
@@ -205,7 +205,7 @@ export default async function HomePage({
             {recommendations.map((topic) => (
               <Card key={topic.id} className="flex h-full flex-col justify-between gap-4">
                 <div className="space-y-2">
-                  <p className="text-base font-semibold tracking-wide text-accent uppercase">
+                  <p className="text-base font-semibold tracking-[0.02em] text-accent normal-case">
                     {RECOMMENDATION_REASONS[topic.reason] ?? "Стоит попробовать"}
                   </p>
                   <h3 className="text-xl font-bold leading-snug">{topic.title}</h3>

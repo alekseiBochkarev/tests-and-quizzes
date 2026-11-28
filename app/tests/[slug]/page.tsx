@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StartTraining } from "@/components/content/StartTraining";
-import { TopicHeroArt } from "@/components/content/TopicArt";
+import { TopicHeroArt, TopicMark } from "@/components/content/TopicArt";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -12,7 +12,8 @@ import { countDueQuestions } from "@/lib/attempts/service";
 import { getTopicBySlug } from "@/lib/content/catalog";
 import { getTopicQuizzes } from "@/lib/quizzes/service";
 import { questionWord, topicLevelLabel } from "@/lib/ui/text";
-import { getTopicTheme } from "@/lib/ui/topicThemes";
+import { isTopicHeroThemeKey, isTopicSerifThemeKey, resolveTopicTheme } from "@/lib/ui/topicThemes";
+import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,7 +40,16 @@ export default async function TopicPage({ params }: PageProps) {
   const reviewCount = user ? await countDueQuestions(user.id, topic.id) : 0;
   const quizzes = await getTopicQuizzes(topic.id);
   const progress = topic.progress;
-  const theme = getTopicTheme(topic.slug);
+  // Ключ берём из базы, а карта slug остаётся фолбэком для тем пилота.
+  const theme = resolveTopicTheme(topic.slug, topic.themeKey);
+  // Сцена — только у пяти тем уровня B; остальные её не рисуют вообще.
+  const heroTheme = isTopicHeroThemeKey(theme) ? theme : null;
+  const serifHeading = isTopicSerifThemeKey(theme);
+
+  const headingClass = cn(
+    "text-3xl font-bold tracking-tight sm:text-4xl",
+    serifHeading && "font-serif",
+  );
 
   return (
     <div className="space-y-8" data-topic-theme={theme ?? undefined}>
@@ -55,22 +65,46 @@ export default async function TopicPage({ params }: PageProps) {
         </ol>
       </nav>
 
-      <div className={theme ? "topic-hero" : "space-y-3"}>
-        <div className="topic-hero-copy space-y-3">
-          <p className="text-base font-semibold tracking-wide text-accent uppercase">
-            {topic.category.title}
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{topic.title}</h1>
-          {topic.description ? (
-            <p className="max-w-3xl text-xl text-ink-soft">{topic.description}</p>
-          ) : null}
-          <p className="text-base text-muted">
-            {topic.questionCount} {questionWord(topic.questionCount)} с объяснениями после каждого
-            ответа.
-          </p>
+      {heroTheme ? (
+        <>
+          <div className="topic-hero">
+            <div className="topic-hero-copy space-y-3">
+              <p className="flex items-center gap-2 text-base font-semibold tracking-[0.02em] text-accent normal-case">
+                <TopicMark theme={heroTheme} className="h-8 w-8" />
+                {topic.category.title}
+              </p>
+              <h1 className={headingClass}>{topic.title}</h1>
+              {topic.description ? (
+                <p className="max-w-prose text-xl text-ink-soft">{topic.description}</p>
+              ) : null}
+              <p className="text-base text-muted">
+                {topic.questionCount} {questionWord(topic.questionCount)} с объяснениями после
+                каждого ответа.
+              </p>
+            </div>
+            <TopicHeroArt theme={heroTheme} />
+          </div>
+          <div className="topic-stripe" aria-hidden="true" />
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <p className="flex items-center gap-2 text-base font-semibold tracking-[0.02em] text-accent normal-case">
+              {theme ? <TopicMark theme={theme} className="h-8 w-8" /> : null}
+              {topic.category.title}
+            </p>
+            <h1 className={headingClass}>{topic.title}</h1>
+            {topic.description ? (
+              <p className="max-w-prose text-xl text-ink-soft">{topic.description}</p>
+            ) : null}
+            <p className="text-base text-muted">
+              {topic.questionCount} {questionWord(topic.questionCount)} с объяснениями после каждого
+              ответа.
+            </p>
+          </div>
+          {theme ? <div className="topic-stripe" aria-hidden="true" /> : null}
         </div>
-        {theme ? <TopicHeroArt theme={theme} /> : null}
-      </div>
+      )}
 
       {progress && progress.seenQuestions > 0 ? (
         <div className="max-w-2xl space-y-3 rounded-card border border-line bg-surface p-5">
@@ -98,8 +132,7 @@ export default async function TopicPage({ params }: PageProps) {
               Готовые выпуски
             </h2>
             <p className="text-base text-ink-soft">
-              Набор на 10–12 вопросов: удобно пройти за один раз и вернуться по постоянной
-              ссылке.
+              Набор на 10–12 вопросов: удобно пройти за один раз и вернуться по постоянной ссылке.
             </p>
           </div>
           <div className="space-y-3">
@@ -132,6 +165,12 @@ export default async function TopicPage({ params }: PageProps) {
           reviewCount={reviewCount}
         />
       </div>
+
+      {theme === "magic" ? (
+        <p className="max-w-prose text-base text-muted">
+          Тема по книгам Дж. К. Роулинг. Проект не связан с автором и правообладателями.
+        </p>
+      ) : null}
     </div>
   );
 }

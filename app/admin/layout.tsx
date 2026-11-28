@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <div className="space-y-8">
       <header className="space-y-3 border-b border-line pb-6">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">
+        <p className="text-base font-semibold tracking-[0.02em] text-accent normal-case">
           Служебный раздел
         </p>
         <div className="flex flex-wrap items-end justify-between gap-3">

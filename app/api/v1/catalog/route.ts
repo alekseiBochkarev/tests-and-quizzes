@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getCatalog } from "@/lib/content/catalog";
+import { catalogResponseSchema } from "@/lib/content/schemas";
 import { handleRouteError } from "@/lib/auth/api";
 import { ok } from "@/lib/http/json";
 import { getRequestId } from "@/lib/http/requestId";
@@ -14,7 +15,8 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
     const categories = await getCatalog(user?.id ?? null);
-    return ok({ categories }, { requestId });
+    const payload = catalogResponseSchema.parse({ categories });
+    return ok(payload, { requestId });
   } catch (error) {
     return handleRouteError(error, requestId, "catalog");
   }

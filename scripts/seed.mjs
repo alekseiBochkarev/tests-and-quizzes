@@ -19,6 +19,21 @@ const now = new Date();
 const QUIZ_MIN_QUESTIONS = 10;
 const QUIZ_QUESTION_LIMIT = 10;
 
+/**
+ * Оформление тем (VIS-01). Заполняем только пустое поле `themeKey`, чтобы
+ * повторный сид не перезаписал выбор редактора в админке. Тем `cooking` и
+ * `nostalgia` в сиде пока нет — их ключи появятся вместе с контентом.
+ */
+const THEME_KEY_BY_SLUG = {
+  "soviet-cinema": "cinema",
+  music: "music",
+  literature: "literature",
+  history: "history",
+  geography: "geography",
+  animals: "animals",
+  "harry-potter": "magic",
+};
+
 function assertContent() {
   const seenTopicSlugs = new Set();
 
@@ -91,6 +106,16 @@ async function upsertTopic(client, topic, categoryId, order) {
     [id, categoryId, topic.slug, topic.title, topic.description ?? null, order, now],
   );
   return id;
+}
+
+async function fillTopicThemeKey(client, slug, topicId) {
+  const themeKey = THEME_KEY_BY_SLUG[slug];
+  if (!themeKey) return;
+
+  await client.query(
+    `UPDATE "Topic" SET "themeKey" = $2 WHERE id = $1 AND "themeKey" IS NULL`,
+    [topicId, themeKey],
+  );
 }
 
 async function upsertQuestion(client, topic, question, index, topicId) {
@@ -208,6 +233,7 @@ async function main() {
           categoryId,
           categoryIndex * 100 + topicIndex,
         );
+        await fillTopicThemeKey(client, topic.slug, topicId);
         topicCount += 1;
 
         for (const [questionIndex, question] of topic.questions.entries()) {

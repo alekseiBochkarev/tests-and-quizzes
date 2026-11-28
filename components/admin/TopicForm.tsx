@@ -14,6 +14,12 @@ import { Textarea } from "@/components/ui/Textarea";
 import { CONTENT_STATUSES, CONTENT_STATUS_LABELS } from "@/lib/admin/contentLabels";
 import { requestAdminApi } from "@/lib/admin/client";
 import { slugify } from "@/lib/admin/slug";
+import {
+  isTopicThemeKey,
+  TOPIC_THEME_KEYS,
+  TOPIC_THEME_LABELS,
+  type TopicThemeKey,
+} from "@/lib/ui/topicThemes";
 
 export type TopicFormValues = {
   id: string;
@@ -21,6 +27,7 @@ export type TopicFormValues = {
   slug: string;
   description: string | null;
   coverUrl: string | null;
+  themeKey: TopicThemeKey | null;
   order: number;
   status: string;
   categoryId: string;
@@ -82,6 +89,7 @@ export function TopicForm({
   const [categoryId, setCategoryId] = useState(topic?.categoryId ?? categories[0]?.id ?? "");
   const [description, setDescription] = useState(topic?.description ?? "");
   const [coverUrl, setCoverUrl] = useState(topic?.coverUrl ?? "");
+  const [themeKey, setThemeKey] = useState<TopicThemeKey | "">(topic?.themeKey ?? "");
   const [order, setOrder] = useState(topic ? String(topic.order) : "");
   const [status, setStatus] = useState(topic?.status ?? "DRAFT");
 
@@ -108,6 +116,7 @@ export function TopicForm({
       slug: slug || slugify(title),
       description,
       coverUrl,
+      themeKey: themeKey || null,
       ...(order.trim() ? { order: Number(order) } : {}),
       status,
     };
@@ -236,6 +245,43 @@ export function TopicForm({
             ))}
           </Select>
         </Labeled>
+
+        <div className="space-y-2">
+          <label htmlFor="topic-theme" className="block text-lg font-semibold text-ink">
+            Оформление темы
+          </label>
+          <Select
+            id="topic-theme"
+            value={themeKey}
+            onChange={(event) =>
+              setThemeKey(isTopicThemeKey(event.target.value) ? event.target.value : "")
+            }
+            aria-describedby="topic-theme-hint"
+          >
+            <option value="">Без оформления</option>
+            {TOPIC_THEME_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {TOPIC_THEME_LABELS[key]}
+              </option>
+            ))}
+          </Select>
+          <p id="topic-theme-hint" className="text-base text-muted">
+            Меняет цвет кнопок и рисунок шапки. Текст и кнопки остаются крупными и контрастными.
+          </p>
+          {fields.themeKey ? (
+            <p className="text-base font-semibold text-danger">{fields.themeKey}</p>
+          ) : null}
+          {topic && status === "PUBLISHED" ? (
+            <p className="text-base text-ink-soft">
+              <Link
+                href={`/tests/${slug || topic.slug}`}
+                className="font-semibold text-accent underline underline-offset-4"
+              >
+                Открыть страницу темы
+              </Link>
+            </p>
+          ) : null}
+        </div>
       </Card>
 
       <div className="flex flex-wrap gap-3">

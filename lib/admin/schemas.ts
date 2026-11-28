@@ -4,6 +4,7 @@ import { CONTENT_STATUSES } from "@/lib/admin/contentLabels";
 import { hasDuplicateOptions } from "@/lib/admin/contentRules";
 import { SLUG_PATTERN, normalizeSlug } from "@/lib/admin/slug";
 import { isAllowedImageLicense } from "@/lib/content/import";
+import { TOPIC_THEME_KEYS } from "@/lib/ui/topicThemes";
 
 /**
  * Входные схемы админки контента (CNT-04).
@@ -61,6 +62,9 @@ export const topicInputSchema = z.object({
     .optional()
     .transform((value) => value || null),
   coverUrl: optionalUrl("Ссылка на обложку должна начинаться с http:// или https://."),
+  // Оформление темы: только ключи реестра. Неизвестное значение отклоняем —
+  // молчаливый null скрыл бы ошибку редактора.
+  themeKey: z.enum(TOPIC_THEME_KEYS).nullable().optional().default(null),
   order: z.coerce
     .number({ message: "Порядок должен быть числом." })
     .int("Порядок должен быть целым числом.")
