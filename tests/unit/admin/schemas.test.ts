@@ -23,6 +23,8 @@ const validQuestion = {
   difficulty: 2,
   imageUrl: "",
   imageLicense: "",
+  imageSource: "",
+  imageAlt: "",
   status: "PUBLISHED",
 };
 
@@ -123,6 +125,54 @@ describe("questionInputSchema", () => {
     expect(questionInputSchema.safeParse({ ...validQuestion, correctIndex: -1 }).success).toBe(false);
     expect(questionInputSchema.safeParse({ ...validQuestion, difficulty: 0 }).success).toBe(false);
     expect(questionInputSchema.safeParse({ ...validQuestion, difficulty: 4 }).success).toBe(false);
+  });
+
+  it("принимает изображение со свободной лицензией и описанием", () => {
+    const parsed = questionInputSchema.safeParse({
+      ...validQuestion,
+      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/example.jpg",
+      imageLicense: "CC BY-SA 4.0",
+      imageSource: "https://commons.wikimedia.org/wiki/File:Example.jpg",
+      imageAlt: "Фотография здания Большого театра",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("требует описание и лицензию, если есть изображение", () => {
+    const withoutAlt = questionInputSchema.safeParse({
+      ...validQuestion,
+      imageUrl: "https://example.com/photo.jpg",
+      imageLicense: "CC0",
+    });
+    expect(withoutAlt.success).toBe(false);
+    if (!withoutAlt.success) {
+      expect(withoutAlt.error.issues.some((issue) => issue.path[0] === "imageAlt")).toBe(true);
+    }
+
+    const withoutLicense = questionInputSchema.safeParse({
+      ...validQuestion,
+      imageUrl: "https://example.com/photo.jpg",
+      imageAlt: "Пример изображения",
+    });
+    expect(withoutLicense.success).toBe(false);
+    if (!withoutLicense.success) {
+      expect(withoutLicense.error.issues.some((issue) => issue.path[0] === "imageLicense")).toBe(
+        true,
+      );
+    }
+  });
+
+  it("отклоняет лицензию, которая не разрешает свободное использование", () => {
+    const parsed = questionInputSchema.safeParse({
+      ...validQuestion,
+      imageUrl: "https://example.com/photo.jpg",
+      imageLicense: "All rights reserved",
+      imageAlt: "Пример изображения",
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues.some((issue) => issue.path[0] === "imageLicense")).toBe(true);
+    }
   });
 });
 

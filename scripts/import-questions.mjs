@@ -333,7 +333,8 @@ async function ensureTopic(
  */
 async function loadTopicCache(client, topicId) {
   const result = await client.query(
-    `SELECT id, text, status, "isDemo", "contentHash", explanation
+    `SELECT id, text, status, "isDemo", "contentHash", explanation,
+            "imageUrl", "imageLicense", "imageSource", "imageAlt"
        FROM "Question"
       WHERE "topicId" = $1`,
     [topicId],
@@ -367,8 +368,9 @@ async function insertQuestion(client, item, topicId, now) {
 
   await client.query(
     `INSERT INTO "Question"
-       (id, "topicId", type, text, explanation, difficulty, status, "isDemo", "contentHash", version, "createdAt", "updatedAt")
-     VALUES ($1, $2, 'SINGLE_CHOICE', $3, $4, $5, $6, false, $7, 1, $8, $8)`,
+       (id, "topicId", type, text, explanation, difficulty, status, "isDemo", "contentHash", version,
+        "imageUrl", "imageLicense", "imageSource", "imageAlt", "createdAt", "updatedAt")
+     VALUES ($1, $2, 'SINGLE_CHOICE', $3, $4, $5, $6, false, $7, 1, $8, $9, $10, $11, $12, $12)`,
     [
       questionId,
       topicId,
@@ -377,6 +379,10 @@ async function insertQuestion(client, item, topicId, now) {
       DEFAULT_DIFFICULTY,
       item.status,
       item.contentHash,
+      item.imageUrl ?? null,
+      item.imageLicense ?? null,
+      item.imageSource ?? null,
+      item.imageAlt ?? null,
       now,
     ],
   );
@@ -400,6 +406,57 @@ async function insertQuestion(client, item, topicId, now) {
      VALUES ${tuples.join(", ")}`,
     params,
   );
+}
+
+/**
+ * Сравнивает иллюстрацию в БД и в файле. Пустые значения считаем равными null,
+ * чтобы отсутствие картинки не считалось изменением.
+ *
+ * @param {Object} row
+ * @param {Object} item элемент ImportItem
+ * @returns {boolean}
+ */
+function imageChanged(row, item) {
+  return (
+    (row.imageUrl ?? null) !== (item.imageUrl ?? null) ||
+    (row.imageLicense ?? null) !== (item.imageLicense ?? null) ||
+    (row.imageSource ?? null) !== (item.imageSource ?? null) ||
+    (row.imageAlt ?? null) !== (item.imageAlt ?? null)
+  );
+}
+
+/**
+ * @param {Client} client
+ * @param {Object} row
+ * @param {Object} item элемент ImportItem
+ * @param {Date} now
+ * @returns {Promise<void>}
+ */
+async function updateQuestion(client, row, item, now) {
+  await client.query(
+    `UPDATE "Question"
+        SET explanation = $2, status = $3, version = version + 1,
+            "imageUrl" = $4, "imageLicense" = $5, "imageSource" = $6, "imageAlt" = $7,
+            "updatedAt" = $8
+      WHERE id = $1`,
+    [
+      row.id,
+      item.explanation,
+      item.status,
+      item.imageUrl ?? null,
+      item.imageLicense ?? null,
+      item.imageSource ?? null,
+      item.imageAlt ?? null,
+      now,
+    ],
+  );
+
+  row.explanation = item.explanation;
+  row.status = item.status;
+  row.imageUrl = item.imageUrl ?? null;
+  row.imageLicense = item.imageLicense ?? null;
+  row.imageSource = item.imageSource ?? null;
+  row.imageAlt = item.imageAlt ?? null;
 }
 
 /**
@@ -458,17 +515,14 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
       };
     }
 
-    if (row.explanation !== item.explanation || row.status !== item.status) {
+    if (
+      row.explanation !== item.explanation ||
+      row.status !== item.status ||
+      imageChanged(row, item)
+    ) {
       if (!dryRun) {
-        await client.query(
-          `UPDATE "Question"
-              SET explanation = $2, status = $3, version = version + 1, "updatedAt" = $4
-            WHERE id = $1`,
-          [row.id, item.explanation, item.status, now],
-        );
+        await updateQuestion(client, row, item, now);
       }
-      row.explanation = item.explanation;
-      row.status = item.status;
       return { outcome: "updated", warnings: [warning] };
     }
 
@@ -504,20 +558,17 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
       };
     }
 
-    if (row.explanation === item.explanation && row.status === item.status) {
+    if (
+      row.explanation === item.explanation &&
+      row.status === item.status &&
+      !imageChanged(row, item)
+    ) {
       return { outcome: "skipped", warnings: [] };
     }
 
     if (!dryRun) {
-      await client.query(
-        `UPDATE "Question"
-            SET explanation = $2, status = $3, version = version + 1, "updatedAt" = $4
-          WHERE id = $1`,
-        [row.id, item.explanation, item.status, now],
-      );
+      await updateQuestion(client, row, item, now);
     }
-    row.explanation = item.explanation;
-    row.status = item.status;
     return { outcome: "updated", warnings: [] };
   }
 
@@ -565,6 +616,10 @@ async function importItem(client, item, topicId, cache, dryRun, now) {
     isDemo: false,
     contentHash: item.contentHash,
     explanation: item.explanation,
+    imageUrl: item.imageUrl ?? null,
+    imageLicense: item.imageLicense ?? null,
+    imageSource: item.imageSource ?? null,
+    imageAlt: item.imageAlt ?? null,
   };
   cache.rows.push(inserted);
   const group = cache.byText.get(textKey);

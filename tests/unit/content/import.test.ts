@@ -335,3 +335,69 @@ describe("planImport", () => {
     expect(hasErrors(plan.issues)).toBe(true);
   });
 });
+
+describe("иллюстрации в импорте", () => {
+  const image = {
+    image_url: "https://upload.wikimedia.org/wikipedia/commons/example.jpg",
+    image_license: "CC BY-SA 4.0",
+    image_source: "https://commons.wikimedia.org/wiki/File:Example.jpg",
+    image_alt: "Фотография здания Большого театра",
+  };
+
+  it("переносит поля изображения в элемент импорта", () => {
+    const plan = planImport({ questions: [question(image)] }, map);
+
+    expect(plan.issues).toHaveLength(0);
+    const item = plan.items[0]!;
+    expect(item.imageUrl).toBe(image.image_url);
+    expect(item.imageLicense).toBe(image.image_license);
+    expect(item.imageSource).toBe(image.image_source);
+    expect(item.imageAlt).toBe(image.image_alt);
+  });
+
+  it("оставляет поля пустыми, если изображения нет", () => {
+    const plan = planImport({ questions: [question()] }, map);
+    const item = plan.items[0]!;
+    expect(item.imageUrl).toBeNull();
+    expect(item.imageLicense).toBeNull();
+    expect(item.imageSource).toBeNull();
+    expect(item.imageAlt).toBeNull();
+  });
+
+  it("требует https-ссылку", () => {
+    const plan = planImport(
+      { questions: [question({ ...image, image_url: "http://example.com/photo.jpg" })] },
+      map,
+    );
+    expect(codes(plan.issues)).toEqual(["invalid_image_url"]);
+    expect(plan.items).toHaveLength(0);
+  });
+
+  it("требует лицензию", () => {
+    const plan = planImport({ questions: [question({ ...image, image_license: "" })] }, map);
+    expect(codes(plan.issues)).toEqual(["missing_image_license"]);
+  });
+
+  it("не принимает лицензию, которая не разрешает свободное использование", () => {
+    const plan = planImport(
+      { questions: [question({ ...image, image_license: "All rights reserved" })] },
+      map,
+    );
+    expect(codes(plan.issues)).toEqual(["image_license_not_allowed"]);
+  });
+
+  it("требует описание для незрячих", () => {
+    const plan = planImport({ questions: [question({ ...image, image_alt: "" })] }, map);
+    expect(codes(plan.issues)).toEqual(["missing_image_alt"]);
+  });
+
+  it("предупреждает о полях изображения без ссылки", () => {
+    const plan = planImport(
+      { questions: [question({ image_license: "CC0", image_alt: "Что-то" })] },
+      map,
+    );
+    expect(codes(plan.issues)).toEqual(["image_fields_ignored"]);
+    expect(plan.issues[0]?.severity).toBe("warning");
+    expect(plan.items[0]?.imageUrl).toBeNull();
+  });
+});

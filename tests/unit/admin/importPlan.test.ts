@@ -18,6 +18,10 @@ function item(overrides: Partial<ImportItem> = {}): ImportItem {
     options: ["395", "410", "476", "1453"],
     correctIndex: 2,
     contentHash: "hash-1",
+    imageUrl: null,
+    imageLicense: null,
+    imageSource: null,
+    imageAlt: null,
     status: "PUBLISHED",
     ...overrides,
   };

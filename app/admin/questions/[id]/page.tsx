@@ -98,6 +98,8 @@ export default async function AdminQuestionPage({ params, searchParams }: PagePr
           explanation: question.explanation,
           imageUrl: question.imageUrl,
           imageLicense: question.imageLicense,
+          imageSource: question.imageSource,
+          imageAlt: question.imageAlt,
           difficulty: question.difficulty,
           status: question.status,
           version: question.version,

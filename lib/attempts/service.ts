@@ -348,6 +348,11 @@ export type AttemptQuestionPayload = {
   isCorrect: boolean | null;
   correctOptionId: string | null;
   explanation: string | null;
+  /** Иллюстрация к вопросу: показывается и до ответа, и после. */
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageLicense: string | null;
+  imageSource: string | null;
   xpAwarded: number;
 };
 
@@ -363,6 +368,7 @@ export type AttemptState = {
   finishedAt: Date | null;
   durationSec: number | null;
   topicTitle: string | null;
+  topicSlug: string | null;
   categoryTitle: string | null;
   quizTitle: string | null;
   currentOrder: number;
@@ -376,7 +382,7 @@ export async function getAttemptState(
   const attempt = await prisma.attempt.findFirst({
     where: { id: attemptId, userId },
     include: {
-      topic: { select: { title: true } },
+      topic: { select: { title: true, slug: true } },
       category: { select: { title: true } },
       quiz: { select: { title: true } },
       answers: {
@@ -410,6 +416,10 @@ export async function getAttemptState(
       isCorrect: answer.isCorrect,
       correctOptionId: answered ? (correctOption?.id ?? null) : null,
       explanation: answered ? answer.question.explanation : null,
+      imageUrl: answer.question.imageUrl,
+      imageAlt: answer.question.imageAlt,
+      imageLicense: answer.question.imageLicense,
+      imageSource: answer.question.imageSource,
       xpAwarded: answer.xpAwarded,
     };
   });
@@ -428,6 +438,7 @@ export async function getAttemptState(
     finishedAt: attempt.finishedAt,
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
+    topicSlug: attempt.topic?.slug ?? null,
     categoryTitle: attempt.category?.title ?? null,
     quizTitle: attempt.quiz?.title ?? null,
     currentOrder: firstUnanswered?.order ?? questions.length,

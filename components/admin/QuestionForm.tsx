@@ -22,6 +22,8 @@ export type QuestionFormValues = {
   explanation: string;
   imageUrl: string | null;
   imageLicense: string | null;
+  imageSource: string | null;
+  imageAlt: string | null;
   difficulty: number;
   status: string;
   version: number;
@@ -91,6 +93,8 @@ export function QuestionForm({
   const [difficulty, setDifficulty] = useState(String(question?.difficulty ?? 2));
   const [imageUrl, setImageUrl] = useState(question?.imageUrl ?? "");
   const [imageLicense, setImageLicense] = useState(question?.imageLicense ?? "");
+  const [imageSource, setImageSource] = useState(question?.imageSource ?? "");
+  const [imageAlt, setImageAlt] = useState(question?.imageAlt ?? "");
   const [status, setStatus] = useState(question?.status ?? "DRAFT");
 
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +121,8 @@ export function QuestionForm({
       difficulty: Number(difficulty),
       imageUrl,
       imageLicense,
+      imageSource,
+      imageAlt,
       status,
     };
 
@@ -264,20 +270,53 @@ export function QuestionForm({
           label="Ссылка на изображение"
           value={imageUrl}
           onChange={(event) => setImageUrl(event.target.value)}
-          hint="Необязательно. Только с лицензией и подписью; загрузка файлов появится позже."
+          hint="Необязательно. Свободная лицензия: CC0, CC BY, CC BY-SA или общественное достояние. Постеры, кадры фильмов и логотипы не используем."
           error={fields.imageUrl}
           inputMode="url"
         />
 
         <Field
+          id="question-image-alt"
+          label="Описание изображения"
+          value={imageAlt}
+          onChange={(event) => setImageAlt(event.target.value)}
+          hint="Что видно на картинке. Прочитают незрячие пользователи. Обязательно, если есть изображение."
+          error={fields.imageAlt}
+          maxLength={300}
+        />
+
+        <Field
           id="question-image-license"
-          label="Подпись к изображению"
+          label="Лицензия изображения"
           value={imageLicense}
           onChange={(event) => setImageLicense(event.target.value)}
-          hint="Автор, источник и лицензия. Например: «Фото: И. Иванов, CC BY-SA 4.0»."
+          hint="Например: CC BY-SA 4.0, CC0 или общественное достояние. Обязательно, если есть изображение."
           error={fields.imageLicense}
           maxLength={300}
         />
+
+        <Field
+          id="question-image-source"
+          label="Ссылка на источник"
+          value={imageSource}
+          onChange={(event) => setImageSource(event.target.value)}
+          hint="Страница файла или страница автора: её увидит пользователь рядом с картинкой."
+          error={fields.imageSource}
+          inputMode="url"
+        />
+
+        {imageUrl ? (
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-ink">Предпросмотр</p>
+            {/* Внешние иллюстрации: перенос в собственное хранилище — отдельная задача. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={imageAlt}
+              className="max-h-64 w-full rounded-card border border-line bg-surface object-contain"
+            />
+          </div>
+        ) : null}
 
         <Labeled
           id="question-status"

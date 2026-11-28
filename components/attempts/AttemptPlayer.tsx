@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 
+import { TopicMark } from "@/components/content/TopicArt";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { AttemptState } from "@/lib/attempts/service";
 import { questionLevelLabel } from "@/lib/ui/text";
+import { getTopicTheme } from "@/lib/ui/topicThemes";
 import { cn } from "@/lib/utils/cn";
 
 type Question = AttemptState["questions"][number];
@@ -77,6 +79,7 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
       : attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка";
   const isLast = currentIndex >= total - 1;
   const resumed = attempt.answeredCount > 0;
+  const theme = getTopicTheme(attempt.topicSlug);
 
   async function submitAnswer() {
     if (!question || !selectedOptionId || feedback) return;
@@ -196,7 +199,10 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-base font-semibold tracking-wide text-accent uppercase">{title}</p>
+          <p className="flex items-center gap-2 text-base font-semibold tracking-wide text-accent uppercase">
+            {theme ? <TopicMark theme={theme} className="h-6 w-6" /> : null}
+            {title}
+          </p>
           <p className="text-lg font-semibold text-ink">
             Вопрос {currentIndex + 1} из {total}
             <span className="block text-base font-normal text-muted">
@@ -217,6 +223,34 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
 
       <Card className="space-y-5">
         <h1 className="text-2xl font-bold leading-snug sm:text-3xl">{question.text}</h1>
+
+        {question.imageUrl ? (
+          <figure className="space-y-2">
+            {/* Внешние иллюстрации: перенос в собственное хранилище — отдельная задача. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={question.imageUrl}
+              alt={question.imageAlt ?? ""}
+              loading="lazy"
+              className="max-h-80 w-full rounded-card border border-line bg-surface object-contain"
+            />
+            {question.imageLicense ? (
+              <figcaption className="text-base text-muted">
+                Лицензия: {question.imageLicense}.{" "}
+                {question.imageSource ? (
+                  <a
+                    href={question.imageSource}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-4"
+                  >
+                    Источник изображения
+                  </a>
+                ) : null}
+              </figcaption>
+            ) : null}
+          </figure>
+        ) : null}
 
         <fieldset className="space-y-3" disabled={Boolean(feedback) || submitting}>
           <legend className="text-lg font-semibold text-ink">Выберите один вариант</legend>

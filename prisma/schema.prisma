@@ -211,6 +211,8 @@ model Question {
   explanation  String
   imageUrl     String?
   imageLicense String?
+  imageSource  String?
+  imageAlt     String?
   difficulty   Int           @default(2)
   status       ContentStatus @default(PUBLISHED)
   // Демо-контент из сида: помечаем, чтобы не выдавать за финальный.

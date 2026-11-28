@@ -5,7 +5,11 @@
       "question": "Кто написал музыку балета «Щелкунчик»?",
       "options": ["Сергей Прокофьев", "Игорь Стравинский", "Пётр Чайковский", "Александр Глазунов"],
       "correct_index": 2,
-      "explanation": "«Щелкунчика» написал Пётр Ильич Чайковский. Премьера балета прошла в 1892 году в Мариинском театре."
+      "explanation": "«Щелкунчика» написал Пётр Ильич Чайковский. Премьера балета прошла в 1892 году в Мариинском театре.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/02023_Christmas_Nutcracker.jpg/1280px-02023_Christmas_Nutcracker.jpg",
+      "image_license": "CC0 — Silar",
+      "image_source": "https://commons.wikimedia.org/wiki/File:02023_Christmas_Nutcracker.jpg",
+      "image_alt": "Деревянная кукла-щёлкунчик в мундире"
     },
     {
       "topic": "Песни и музыка",
@@ -17,7 +21,11 @@
         "Александр Бородин"
       ],
       "correct_index": 0,
-      "explanation": "«Картинки с выставки» Мусоргский написал в 1874 году под впечатлением от выставки художника Виктора Гартмана."
+      "explanation": "«Картинки с выставки» Мусоргский написал в 1874 году под впечатлением от выставки художника Виктора Гартмана.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Hartmann_Paris_Catacombs.jpg",
+      "image_license": "Общественное достояние — Виктор Гартман",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Hartmann_Paris_Catacombs.jpg",
+      "image_alt": "Картина с видом парижских катакомб"
     },
     {
       "topic": "Песни и музыка",
@@ -29,7 +37,11 @@
         "Николай Римский-Корсаков"
       ],
       "correct_index": 3,
-      "explanation": "«Шехеразаду» написал Николай Римский-Корсаков в 1888 году по мотивам сказок «Тысячи и одной ночи»."
+      "explanation": "«Шехеразаду» написал Николай Римский-Корсаков в 1888 году по мотивам сказок «Тысячи и одной ночи».",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Scheherazade_by_V._Serov_03.jpg/1280px-Scheherazade_by_V._Serov_03.jpg",
+      "image_license": "Общественное достояние — Валентин Серов",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Scheherazade_by_V._Serov_03.jpg",
+      "image_alt": "Картина на сюжет сказок «Тысячи и одной ночи»"
     },
     {
       "topic": "Песни и музыка",
@@ -41,7 +53,11 @@
         "Николай Римский-Корсаков"
       ],
       "correct_index": 1,
-      "explanation": "Оперу написал Михаил Глинка по поэме Александра Пушкина. Премьера состоялась в 1842 году в Петербурге."
+      "explanation": "Оперу написал Михаил Глинка по поэме Александра Пушкина. Премьера состоялась в 1842 году в Петербурге.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Ruslan_i_Ludmila_by_I.Bilibin_-_forrest.jpg",
+      "image_license": "Общественное достояние — Иван Билибин",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Ruslan_i_Ludmila_by_I.Bilibin_-_forrest.jpg",
+      "image_alt": "Иллюстрация к поэме «Руслан и Людмила»"
     },
     {
       "topic": "Песни и музыка",
@@ -100,7 +116,11 @@
         "Милий Балакирев"
       ],
       "correct_index": 2,
-      "explanation": "Вторую симфонию Александр Бородин завершил в 1876 году. Название «Богатырская» ей дал критик Владимир Стасов."
+      "explanation": "Вторую симфонию Александр Бородин завершил в 1876 году. Название «Богатырская» ей дал критик Владимир Стасов.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/1898_Vasnetsov_Bogatyrs_anagoria.JPG/1280px-1898_Vasnetsov_Bogatyrs_anagoria.JPG",
+      "image_license": "Общественное достояние — Виктор Васнецов",
+      "image_source": "https://commons.wikimedia.org/wiki/File:1898_Vasnetsov_Bogatyrs_anagoria.JPG",
+      "image_alt": "Три богатыря на конях в дозоре"
     },
     {
       "topic": "Песни и музыка",
@@ -114,14 +134,22 @@
       "question": "В каком городе находится Большой театр?",
       "options": ["Москва", "Санкт-Петербург", "Нижний Новгород", "Казань"],
       "correct_index": 0,
-      "explanation": "Большой театр стоит в Москве на Театральной площади. Нынешнее здание театра открылось в 1856 году."
+      "explanation": "Большой театр стоит в Москве на Театральной площади. Нынешнее здание театра открылось в 1856 году.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Moscow_05-2012_Bolshoi_after_renewal.jpg/1280px-Moscow_05-2012_Bolshoi_after_renewal.jpg",
+      "image_license": "CC BY-SA 3.0 — A.Savin",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Moscow_05-2012_Bolshoi_after_renewal.jpg",
+      "image_alt": "Здание театра с колоннадой и скульптурной квадригой на портике"
     },
     {
       "topic": "Песни и музыка",
       "question": "В каком городе работает Мариинский театр?",
       "options": ["Москва", "Екатеринбург", "Санкт-Петербург", "Новосибирск"],
       "correct_index": 2,
-      "explanation": "Мариинский театр находится в Санкт-Петербурге. В советские годы он носил имя Кировского театра."
+      "explanation": "Мариинский театр находится в Санкт-Петербурге. В советские годы он носил имя Кировского театра.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Mariinsky_Theatre_Saint_Petersburg_Russia_03.jpg/1280px-Mariinsky_Theatre_Saint_Petersburg_Russia_03.jpg",
+      "image_license": "CC BY 4.0 — Ninaras",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Mariinsky_Theatre_Saint_Petersburg_Russia_03.jpg",
+      "image_alt": "Здание театра с колоннадой и флагом"
     },
     {
       "topic": "Песни и музыка",
@@ -198,28 +226,44 @@
       "question": "Сколько струн у скрипки?",
       "options": ["3", "5", "6", "4"],
       "correct_index": 3,
-      "explanation": "У скрипки четыре струны, настроенные по квинтам. Смычок делает её звук протяжным и певучим."
+      "explanation": "У скрипки четыре струны, настроенные по квинтам. Смычок делает её звук протяжным и певучим.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Violin_VL100.png",
+      "image_license": "CC0 — Just plain Bill",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Violin_VL100.png",
+      "image_alt": "Скрипка со смычком на светлом фоне"
     },
     {
       "topic": "Песни и музыка",
       "question": "Какой инструмент музыкант держит между коленями и играет смычком?",
       "options": ["Скрипка", "Балалайка", "Виолончель", "Флейта"],
       "correct_index": 2,
-      "explanation": "Виолончель больше скрипки и альта. Играют на ней сидя, опирая инструмент на пол металлическим шпилем."
+      "explanation": "Виолончель больше скрипки и альта. Играют на ней сидя, опирая инструмент на пол металлическим шпилем.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Cello_study.jpg/1280px-Cello_study.jpg",
+      "image_license": "CC BY-SA 3.0 — MichaelMaggs",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Cello_study.jpg",
+      "image_alt": "Большой смычковый инструмент, на котором играют сидя"
     },
     {
       "topic": "Песни и музыка",
       "question": "Сколько струн у балалайки?",
       "options": ["2", "3", "4", "6"],
       "correct_index": 1,
-      "explanation": "У балалайки три струны. Это русский народный щипковый инструмент с треугольным корпусом."
+      "explanation": "У балалайки три струны. Это русский народный щипковый инструмент с треугольным корпусом.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/A_prima_balalaika_and_a_bass_balalaika.jpg/1280px-A_prima_balalaika_and_a_bass_balalaika.jpg",
+      "image_license": "CC BY-SA 4.0 — Cullen328",
+      "image_source": "https://commons.wikimedia.org/wiki/File:A_prima_balalaika_and_a_bass_balalaika.jpg",
+      "image_alt": "Две балалайки с треугольным корпусом"
     },
     {
       "topic": "Песни и музыка",
       "question": "К какой группе инструментов относится гобой?",
       "options": ["Деревянные духовые", "Медные духовые", "Струнные смычковые", "Ударные"],
       "correct_index": 0,
-      "explanation": "Гобой — деревянный духовой инструмент. Его характерный звук получают с помощью двойного язычка-трости."
+      "explanation": "Гобой — деревянный духовой инструмент. Его характерный звук получают с помощью двойного язычка-трости.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Oboe_modern.jpg/1280px-Oboe_modern.jpg",
+      "image_license": "CC BY-SA 3.0 — Hustvedt, Gisbert K",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Oboe_modern.jpg",
+      "image_alt": "Продолговатый деревянный инструмент с клапанами"
     },
     {
       "topic": "Песни и музыка",

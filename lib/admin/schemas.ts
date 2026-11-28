@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CONTENT_STATUSES } from "@/lib/admin/contentLabels";
 import { hasDuplicateOptions } from "@/lib/admin/contentRules";
 import { SLUG_PATTERN, normalizeSlug } from "@/lib/admin/slug";
+import { isAllowedImageLicense } from "@/lib/content/import";
 
 /**
  * Входные схемы админки контента (CNT-04).
@@ -104,6 +105,15 @@ export const questionInputSchema = z
       .max(300, "Подпись к изображению слишком длинная.")
       .optional()
       .transform((value) => value || null),
+    imageSource: optionalUrl(
+      "Ссылка на источник изображения должна начинаться с http:// или https://.",
+    ),
+    imageAlt: z
+      .string()
+      .trim()
+      .max(300, "Описание изображения слишком длинное.")
+      .optional()
+      .transform((value) => value || null),
     status: statusSchema.default("DRAFT"),
   })
   .superRefine((value, ctx) => {
@@ -113,6 +123,30 @@ export const questionInputSchema = z
         path: ["options"],
         message: "Варианты ответа не должны повторяться.",
       });
+    }
+
+    if (value.imageUrl) {
+      if (!value.imageLicense) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["imageLicense"],
+          message: "Укажите лицензию изображения: CC0, CC BY, CC BY-SA или общественное достояние.",
+        });
+      } else if (!isAllowedImageLicense(value.imageLicense)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["imageLicense"],
+          message: "Допустимы только CC0, CC BY, CC BY-SA и общественное достояние.",
+        });
+      }
+
+      if (!value.imageAlt) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["imageAlt"],
+          message: "Опишите изображение словами: это прочитают незрячие пользователи.",
+        });
+      }
     }
 
     if (value.status === "PUBLISHED" && !value.explanation) {

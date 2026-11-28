@@ -48,7 +48,12 @@ export type ImportIssueCode =
   | "possible_duplicate_text"
   | "topic_category_mismatch"
   | "unknown_category"
-  | "target_topic_ignored";
+  | "target_topic_ignored"
+  | "invalid_image_url"
+  | "missing_image_license"
+  | "missing_image_alt"
+  | "image_license_not_allowed"
+  | "image_fields_ignored";
 
 export type ImportIssue = {
   /** Номер вопроса в файле, 1-based. Для ошибок файла/маппинга — null. */
@@ -73,6 +78,11 @@ export type ImportItem = {
   options: string[];
   correctIndex: number;
   contentHash: string;
+  /** Иллюстрация к вопросу: https-ссылка, лицензия, страница-источник, alt. */
+  imageUrl: string | null;
+  imageLicense: string | null;
+  imageSource: string | null;
+  imageAlt: string | null;
   /** Без объяснения вопрос уходит в DRAFT и не показывается пользователю. */
   status: "PUBLISHED" | "DRAFT";
 };
@@ -84,6 +94,19 @@ export type ImportPlan = {
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const OPTIONS_PER_QUESTION = 4;
+
+/**
+ * Допустимые лицензии иллюстраций. Мы берём только свободные материалы:
+ * общественное достояние, CC0 и CC BY/CC BY-SA с указанием автора. Постеры,
+ * кадры фильмов и логотипы не используются независимо от лицензии.
+ */
+const ALLOWED_IMAGE_LICENSE =
+  /^(?:cc0|cc by(?:-sa)?(?:\s+\d+(?:\.\d+)?)?|public domain|общественное достояние|pd|pd-old(?:-\d+)?)(?:\s*[—–-]\s*.+)?$/i;
+
+/** Разрешена ли лицензия иллюстрации: только свободные материалы. */
+export function isAllowedImageLicense(value: string): boolean {
+  return ALLOWED_IMAGE_LICENSE.test(value.trim());
+}
 const HASH_VERSION = "q1";
 const HASH_SEPARATOR = "\u001f";
 
@@ -426,8 +449,95 @@ function validateQuestion(raw: unknown, index: number, map: TopicMap): Validatio
     };
   }
 
-  const explanation = readString(raw.explanation);
   const warnings: ImportIssue[] = [];
+
+  // Иллюстрация необязательна. Если она есть, требуем https-ссылку, свободную
+  // лицензию и alt: без них картинку нельзя показывать аудитории 55+ и нельзя
+  // корректно указать авторство.
+  const imageUrl = readString(raw.image_url);
+  const imageLicense = readString(raw.image_license);
+  const imageSource = readString(raw.image_source);
+  const imageAlt = readString(raw.image_alt);
+
+  let itemImageUrl: string | null = null;
+  let itemImageLicense: string | null = null;
+  let itemImageSource: string | null = null;
+  let itemImageAlt: string | null = null;
+
+  if (imageUrl) {
+    let parsedImageUrl: URL | null = null;
+    try {
+      parsedImageUrl = new URL(imageUrl);
+    } catch {
+      parsedImageUrl = null;
+    }
+
+    if (!parsedImageUrl || parsedImageUrl.protocol !== "https:") {
+      return {
+        item: null,
+        issues: [
+          issue("invalid_image_url", `Вопрос #${position}: image_url должен быть https-ссылкой.`, {
+            index: position,
+            sourceTopic,
+          }),
+        ],
+      };
+    }
+
+    if (!imageLicense) {
+      return {
+        item: null,
+        issues: [
+          issue(
+            "missing_image_license",
+            `Вопрос #${position}: у иллюстрации не указана лицензия (image_license).`,
+            { index: position, sourceTopic },
+          ),
+        ],
+      };
+    }
+
+    if (!isAllowedImageLicense(imageLicense)) {
+      return {
+        item: null,
+        issues: [
+          issue(
+            "image_license_not_allowed",
+            `Вопрос #${position}: лицензия «${imageLicense}» не разрешена. Допустимы CC0, CC BY, CC BY-SA и общественное достояние.`,
+            { index: position, sourceTopic },
+          ),
+        ],
+      };
+    }
+
+    if (!imageAlt) {
+      return {
+        item: null,
+        issues: [
+          issue(
+            "missing_image_alt",
+            `Вопрос #${position}: у иллюстрации нет описания для незрячих (image_alt).`,
+            { index: position, sourceTopic },
+          ),
+        ],
+      };
+    }
+
+    itemImageUrl = imageUrl;
+    itemImageLicense = imageLicense;
+    itemImageSource = imageSource || null;
+    itemImageAlt = imageAlt;
+  } else if (imageLicense || imageSource || imageAlt) {
+    warnings.push(
+      issue(
+        "image_fields_ignored",
+        `Вопрос #${position}: поля иллюстрации заполнены, но image_url пуст — они пропущены.`,
+        { index: position, sourceTopic, severity: "warning" },
+      ),
+    );
+  }
+
+  const explanation = readString(raw.explanation);
   if (!explanation) {
     warnings.push(
       issue(
@@ -457,6 +567,10 @@ function validateQuestion(raw: unknown, index: number, map: TopicMap): Validatio
         options,
         correctIndex,
       }),
+      imageUrl: itemImageUrl,
+      imageLicense: itemImageLicense,
+      imageSource: itemImageSource,
+      imageAlt: itemImageAlt,
       status: explanation ? "PUBLISHED" : "DRAFT",
     },
     issues,
