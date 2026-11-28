@@ -363,6 +363,7 @@ export type AttemptState = {
   finishedAt: Date | null;
   durationSec: number | null;
   topicTitle: string | null;
+  topicSlug: string | null;
   categoryTitle: string | null;
   quizTitle: string | null;
   currentOrder: number;
@@ -376,7 +377,7 @@ export async function getAttemptState(
   const attempt = await prisma.attempt.findFirst({
     where: { id: attemptId, userId },
     include: {
-      topic: { select: { title: true } },
+      topic: { select: { title: true, slug: true } },
       category: { select: { title: true } },
       quiz: { select: { title: true } },
       answers: {
@@ -428,6 +429,7 @@ export async function getAttemptState(
     finishedAt: attempt.finishedAt,
     durationSec: attempt.durationSec,
     topicTitle: attempt.topic?.title ?? null,
+    topicSlug: attempt.topic?.slug ?? null,
     categoryTitle: attempt.category?.title ?? null,
     quizTitle: attempt.quiz?.title ?? null,
     currentOrder: firstUnanswered?.order ?? questions.length,

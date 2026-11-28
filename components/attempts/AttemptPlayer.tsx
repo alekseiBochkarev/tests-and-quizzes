@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 
+import { TopicMark } from "@/components/content/TopicArt";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import type { AttemptState } from "@/lib/attempts/service";
 import { questionLevelLabel } from "@/lib/ui/text";
+import { getTopicTheme } from "@/lib/ui/topicThemes";
 import { cn } from "@/lib/utils/cn";
 
 type Question = AttemptState["questions"][number];
@@ -77,6 +79,7 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
       : attempt.quizTitle ?? attempt.topicTitle ?? attempt.categoryTitle ?? "Тренировка";
   const isLast = currentIndex >= total - 1;
   const resumed = attempt.answeredCount > 0;
+  const theme = getTopicTheme(attempt.topicSlug);
 
   async function submitAnswer() {
     if (!question || !selectedOptionId || feedback) return;
@@ -196,7 +199,10 @@ export function AttemptPlayer({ attempt }: { attempt: AttemptState }) {
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-base font-semibold tracking-wide text-accent uppercase">{title}</p>
+          <p className="flex items-center gap-2 text-base font-semibold tracking-wide text-accent uppercase">
+            {theme ? <TopicMark theme={theme} className="h-6 w-6" /> : null}
+            {title}
+          </p>
           <p className="text-lg font-semibold text-ink">
             Вопрос {currentIndex + 1} из {total}
             <span className="block text-base font-normal text-muted">

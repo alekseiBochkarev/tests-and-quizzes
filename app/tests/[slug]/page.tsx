@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StartTraining } from "@/components/content/StartTraining";
+import { TopicHeroArt } from "@/components/content/TopicArt";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -11,6 +12,7 @@ import { countDueQuestions } from "@/lib/attempts/service";
 import { getTopicBySlug } from "@/lib/content/catalog";
 import { getTopicQuizzes } from "@/lib/quizzes/service";
 import { questionWord, topicLevelLabel } from "@/lib/ui/text";
+import { getTopicTheme } from "@/lib/ui/topicThemes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,9 +39,10 @@ export default async function TopicPage({ params }: PageProps) {
   const reviewCount = user ? await countDueQuestions(user.id, topic.id) : 0;
   const quizzes = await getTopicQuizzes(topic.id);
   const progress = topic.progress;
+  const theme = getTopicTheme(topic.slug);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-topic-theme={theme ?? undefined}>
       <nav aria-label="Хлебные крошки" className="text-base text-muted">
         <ol className="flex flex-wrap items-center gap-2">
           <li>
@@ -52,18 +55,21 @@ export default async function TopicPage({ params }: PageProps) {
         </ol>
       </nav>
 
-      <div className="space-y-3">
-        <p className="text-base font-semibold tracking-wide text-accent uppercase">
-          {topic.category.title}
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{topic.title}</h1>
-        {topic.description ? (
-          <p className="max-w-3xl text-xl text-ink-soft">{topic.description}</p>
-        ) : null}
-        <p className="text-base text-muted">
-          {topic.questionCount} {questionWord(topic.questionCount)} с объяснениями после каждого
-          ответа.
-        </p>
+      <div className={theme ? "topic-hero" : "space-y-3"}>
+        <div className="topic-hero-copy space-y-3">
+          <p className="text-base font-semibold tracking-wide text-accent uppercase">
+            {topic.category.title}
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{topic.title}</h1>
+          {topic.description ? (
+            <p className="max-w-3xl text-xl text-ink-soft">{topic.description}</p>
+          ) : null}
+          <p className="text-base text-muted">
+            {topic.questionCount} {questionWord(topic.questionCount)} с объяснениями после каждого
+            ответа.
+          </p>
+        </div>
+        {theme ? <TopicHeroArt theme={theme} /> : null}
       </div>
 
       {progress && progress.seenQuestions > 0 ? (

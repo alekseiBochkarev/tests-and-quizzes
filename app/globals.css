@@ -102,6 +102,159 @@ a {
   top: 1rem;
 }
 
+/*
+ * Оформление тем (пилот): «Советское кино» и «Музыка».
+ *
+ * Тема включается атрибутом data-topic-theme на контейнере страницы и меняет
+ * только акцентные токены и декоративный слой «шапки»/полосы. Подложки под
+ * вопросами и цвет текста остаются базовыми, поэтому контраст не падает.
+ *
+ * Проверенный контраст:
+ *   белый на #7a3b12 — 8.5:1, на #6b3f86 — 7.8:1;
+ *   акцент на фоне #f6f4ef — 7.8:1 и 7.1:1.
+ */
+[data-topic-theme="cinema"] {
+  --color-accent: #7a3b12;
+  --color-accent-hover: #5e2d0d;
+  --color-accent-soft: #f4e7d7;
+  /* Тёплый свет проектора и сепия — без постеров и логотипов. */
+  --topic-hero-wash:
+    radial-gradient(circle at 12% 0%, rgba(255, 205, 138, 0.55), transparent 55%),
+    linear-gradient(135deg, #f7e9d5 0%, #fbf5ea 55%, #ffffff 100%);
+  /* Перфорация киноплёнки. */
+  --topic-hero-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(122, 59, 18, 0.3) 0 0.55rem,
+    transparent 0.55rem 1.45rem
+  );
+  --topic-stripe: linear-gradient(90deg, #7a3b12 0%, #b5763a 45%, #e3c39a 100%);
+  /* Перфорация на полосе в плеере. */
+  --topic-band-pattern: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.55) 0 0.5rem,
+    transparent 0.5rem 1.3rem
+  );
+}
+
+[data-topic-theme="music"] {
+  --color-accent: #6b3f86;
+  --color-accent-hover: #55316d;
+  --color-accent-soft: #f0e7f6;
+  --topic-hero-wash: linear-gradient(135deg, #f7f1fb 0%, #fbf8fd 55%, #ffffff 100%);
+  /* Нотный стан: пять тонких линий. */
+  --topic-hero-pattern: repeating-linear-gradient(
+    to bottom,
+    rgba(107, 63, 134, 0.22) 0 1px,
+    transparent 1px 0.62rem
+  );
+  --topic-stripe: linear-gradient(90deg, #6b3f86 0%, #9a6fb3 50%, #d9c4e6 100%);
+  /* Нотные линейки на полосе в плеере. */
+  --topic-band-pattern: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.45) 0 1px,
+    transparent 1px 0.38rem
+  );
+}
+
+/* «Шапка» темы: декоративная подложка, сцена справа и рамка-перфорация. */
+.topic-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  background-image: var(--topic-hero-wash, none);
+  padding: 1.75rem 1.5rem;
+}
+
+.topic-hero-copy {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.topic-hero-art {
+  flex: 0 0 auto;
+  width: 15rem;
+  max-width: 100%;
+  margin-inline-start: auto;
+  color: var(--color-accent);
+}
+
+@media (max-width: 640px) {
+  .topic-hero-art {
+    width: 10.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .topic-hero {
+    padding: 2rem;
+  }
+}
+
+/* Перфорация киноплёнки или нотные линейки сверху и снизу «шапки». */
+.topic-hero::before,
+.topic-hero::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 0.6rem;
+  background-image: var(--topic-hero-pattern, none);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.topic-hero::before {
+  top: 0;
+}
+
+.topic-hero::after {
+  bottom: 0;
+}
+
+/* У музыки нижняя кромка — клавиатура: белые клавиши с чёрными. */
+[data-topic-theme="music"] .topic-hero::after {
+  height: 0.85rem;
+  opacity: 1;
+  border-top: 1px solid rgba(107, 63, 134, 0.25);
+  background-color: var(--color-surface);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(107, 63, 134, 0.35) 0 1px,
+      transparent 1px 1.4rem
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--color-accent) 0 0.45rem,
+      transparent 0.45rem 1.4rem
+    );
+  background-size:
+    auto 100%,
+    auto 58%;
+  background-position:
+    0 0,
+    1.05rem 0;
+  background-repeat: repeat-x;
+}
+
+/* Тематическая полоса в плеере: заметная, но не мешает чтению. */
+.topic-stripe {
+  height: 0.95rem;
+  border-radius: 999px;
+  background-image:
+    var(--topic-band-pattern, none),
+    var(--topic-stripe, linear-gradient(90deg, var(--color-accent), var(--color-accent)));
+}
+
 /* Уважаем системную настройку «уменьшить движение». */
 @media (prefers-reduced-motion: reduce) {
   html {
